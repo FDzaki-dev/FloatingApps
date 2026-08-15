@@ -1,0 +1,20 @@
+<resources>
+    <string name="app_name">Floating Apps</string>
+    <string name="main_description">Tampilkan bubble melayang di atas aplikasi lain. Tap bubble untuk membuka catatan cepat, geser untuk memindahkan posisi.</string>
+    <string name="grant_permission">Izinkan Tampil di Atas Aplikasi Lain</string>
+    <string name="permission_granted">Izin Sudah Aktif</string>
+    <string name="start_bubble">Mulai Floating Bubble</string>
+    <string name="stop_bubble">Hentikan Floating Bubble</string>
+    <string name="status_active">Status: Aktif — Bubble sedang berjalan</string>
+    <string name="status_inactive">Status: Nonaktif</string>
+    <string name="hint_text">Tips: Tap bubble untuk buka panel catatan. Bubble bisa digeser bebas ke posisi mana saja di layar.</string>
+    <string name="need_overlay_permission">Aktifkan izin overlay terlebih dahulu</string>
+    <string name="notif_permission_denied">Notifikasi tidak akan tampil tanpa izin ini</string>
+    <string name="notif_channel_name">Floating Bubble</string>
+    <string name="notif_channel_desc">Notifikasi latar belakang untuk layanan floating bubble</string>
+    <string name="notif_running_text">Floating bubble sedang aktif</string>
+    <string name="panel_title">Catatan Cepat</string>
+    <string name="note_hint">Tulis catatan di sini…</string>
+    <string name="save_note">Simpan</string>
+    <string name="note_saved">Catatan tersimpan</string>
+</resources>

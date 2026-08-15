@@ -1,0 +1,48 @@
+FLOATING APPS — FILE MANIFEST (v1_Batch1 / Initial Setup)
+Total: 32 file
+
+[PROTECTED - Edit Parsial Only]
+AndroidManifest.xml              app/src/main/AndroidManifest.xml
+build.gradle (root)              build.gradle
+build.gradle (module)            app/build.gradle
+settings.gradle                  settings.gradle
+MainActivity.kt                  app/src/main/java/com/floatingapps/app/MainActivity.kt
+App.kt (Application)             app/src/main/java/com/floatingapps/app/App.kt
+.gitignore                       .gitignore
+.gitattributes                   .gitattributes
+release.yml (workflow)           .github/workflows/release.yml
+
+[CORE LOGIC]
+FloatingBubbleService.kt         app/src/main/java/com/floatingapps/app/FloatingBubbleService.kt
+CrashHandler.kt                  app/src/main/java/com/floatingapps/app/CrashHandler.kt
+
+[RESOURCES - Editable]
+proguard-rules.pro               app/proguard-rules.pro
+gradle.properties                gradle.properties
+activity_main.xml                app/src/main/res/layout/activity_main.xml
+layout_bubble.xml                app/src/main/res/layout/layout_bubble.xml
+layout_bubble_expanded.xml       app/src/main/res/layout/layout_bubble_expanded.xml
+strings.xml                      app/src/main/res/values/strings.xml
+colors.xml                       app/src/main/res/values/colors.xml
+themes.xml                       app/src/main/res/values/themes.xml
+bubble_background.xml            app/src/main/res/drawable/bubble_background.xml
+panel_background.xml             app/src/main/res/drawable/panel_background.xml
+ic_close.xml                     app/src/main/res/drawable/ic_close.xml
+ic_bubble.xml                    app/src/main/res/drawable/ic_bubble.xml
+ic_launcher_foreground.xml       app/src/main/res/drawable/ic_launcher_foreground.xml
+ic_launcher.xml                  app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+ic_launcher_round.xml            app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+backup_rules.xml                 app/src/main/res/xml/backup_rules.xml
+data_extraction_rules.xml        app/src/main/res/xml/data_extraction_rules.xml
+
+[DOCS]
+README.md                        README.md
+CHANGELOG.md                     CHANGELOG.md
+PROJECT_STATE.md                 PROJECT_STATE.md
+FILE_MANIFEST.txt                FILE_MANIFEST.txt (file ini)
+
+[SENGAJA TIDAK ADA]
+gradlew / gradlew.bat / gradle/wrapper/gradle-wrapper.jar
+  -> alasan & dampak: lihat PROJECT_STATE.md poin "Keputusan Arsitektur Penting #1"
+release.keystore
+  -> harus di-generate sendiri oleh user (lihat README.md)

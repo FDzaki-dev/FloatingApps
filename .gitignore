@@ -1,0 +1,17 @@
+*.iml
+.gradle
+/local.properties
+/.idea
+.DS_Store
+/build
+/app/build
+/captures
+.externalNativeBuildOverride
+.cxx
+
+# Secrets - never commit
+release.keystore
+keystore.properties
+*.apk
+*.aab
+release.keystore
