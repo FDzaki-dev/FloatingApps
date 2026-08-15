@@ -10,7 +10,13 @@ logger bawaan, dan CI/CD otomatis via GitHub Actions ke GitHub Release.
 - Package/applicationId: com.floatingapps.app
 - rootProject.name: FloatingApps
 - Versi: 1.0.0 (versionCode 1)
-- Batch: v1_Batch1 (Initial Setup)
+- Batch: v1_Batch2 (Fix)
+
+## Known-Fix Log
+- v1_Batch2: `secrets` context tidak boleh dipakai langsung di `if:` pada
+  GitHub Actions ("Unrecognized named-value: 'secrets'"). Diperbaiki di
+  `.github/workflows/release.yml` — pengecekan secret dipindah ke dalam
+  `run:` (bash `if [ -n "$VAR" ]`) via `env:`, bukan YAML-level `if:`.
 
 ## Stack & Kompatibilitas (fixed, jangan diubah tanpa alasan kuat)
 - AGP 8.5.0, Gradle 8.7, Kotlin 1.9.24, JDK 17

@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## [1.0.0] — v1_Batch2 — Fix
+### Fixed
+- `.github/workflows/release.yml`: GitHub Actions menolak workflow karena
+  `secrets` context dipakai langsung di `if:` step ("Unrecognized named-value:
+  'secrets'") — ini memang tidak didukung GitHub Actions di posisi `if:`.
+  Diperbaiki: cek keberadaan secret dipindah ke dalam shell script (`run:`)
+  lewat `env:` + `if [ -n "$KS_B64" ]`, bukan YAML-level `if:`.
+
 ## [1.0.0] — v1_Batch1 — Initial Setup
 ### Added
 - Struktur proyek Android (Kotlin, AGP 8.5.0, Gradle 8.7, minSdk 26 / targetSdk 34).

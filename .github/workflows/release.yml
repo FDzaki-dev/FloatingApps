@@ -26,16 +26,25 @@ jobs:
         with:
           gradle-version: 8.7
 
-      - name: Decode signing keystore
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+      - name: Decode signing keystore (if provided)
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KS_KEYPASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > release.keystore
-          cat > keystore.properties << EOF
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > release.keystore
+            cat > keystore.properties << EOF
           storeFile=../release.keystore
-          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
-          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          storePassword=$KS_PASS
+          keyAlias=$KS_ALIAS
+          keyPassword=$KS_KEYPASS
           EOF
+            echo "Signing keystore decoded, will build a properly signed release."
+          else
+            echo "No ANDROID_KEYSTORE_BASE64 secret found, will fall back to debug signing."
+          fi
 
       - name: Build release APK
         run: gradle assembleRelease --stacktrace

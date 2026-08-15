@@ -14,4 +14,3 @@ release.keystore
 keystore.properties
 *.apk
 *.aab
-release.keystore
