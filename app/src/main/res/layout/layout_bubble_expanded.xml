@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="260dp"
-    android:layout_height="wrap_content"
+    android:layout_width="280dp"
+    android:layout_height="380dp"
     android:background="@drawable/panel_background"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="12dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -26,28 +26,29 @@
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:src="@drawable/ic_close"
-            android:contentDescription="@string/save_note" />
+            android:contentDescription="@string/close" />
 
     </LinearLayout>
 
     <EditText
-        android:id="@+id/etNote"
+        android:id="@+id/etPickerSearch"
         android:layout_width="match_parent"
-        android:layout_height="100dp"
-        android:layout_marginTop="12dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
         android:background="@color/panel_input_bg"
-        android:gravity="top|start"
-        android:hint="@string/note_hint"
+        android:hint="@string/search_hint"
+        android:inputType="text"
+        android:maxLines="1"
         android:padding="10dp"
         android:textColor="@color/text_primary"
         android:textColorHint="@color/text_secondary"
         android:textSize="14sp" />
 
-    <Button
-        android:id="@+id/btnSave"
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvPickerApps"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:text="@string/save_note" />
+        android:layout_height="0dp"
+        android:layout_marginTop="8dp"
+        android:layout_weight="1" />
 
 </LinearLayout>

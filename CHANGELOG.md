@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## [2.0.0] — v2_Batch3 — Architecture Pivot
+### Changed (breaking)
+- Konsep app diperbaiki total: dari "bubble + catatan cepat lokal" menjadi
+  **launcher yang menjalankan app lain di jendela freeform/floating nyata**
+  (native, interaktif penuh), sesuai maksud awal — menjembatani floating
+  window untuk app yang tidak mendukungnya secara bawaan.
+- Integrasi Shizuku (`dev.rikka.shizuku:api/provider:13.1.5`) untuk privilese
+  shell (`am start --windowingMode 5`, `settings put global
+  force_resizable_activities 1`) tanpa root.
+- MainActivity: checklist setup (Overlay + Shizuku) + pencarian & daftar
+  semua app terpasang, tap untuk floating.
+- FloatingBubbleService: panel bubble sekarang app picker (bukan catatan).
+- Dihapus: fitur catatan cepat (SharedPreferences notes) — tidak lagi relevan.
+- versionCode 2 / versionName 2.0.0.
+
 ## [1.0.0] — v1_Batch2 — Fix
 ### Fixed
 - `.github/workflows/release.yml`: GitHub Actions menolak workflow karena

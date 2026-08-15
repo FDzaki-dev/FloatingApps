@@ -7,10 +7,10 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.graphics.PixelFormat
-import android.os.Build
 import android.os.IBinder
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -20,6 +20,8 @@ import android.widget.EditText
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import kotlin.math.abs
 
 class FloatingBubbleService : Service() {
@@ -29,8 +31,6 @@ class FloatingBubbleService : Service() {
             private set
         private const val CHANNEL_ID = "floating_apps_channel"
         private const val NOTIF_ID = 1001
-        private const val PREFS_NAME = "floating_notes"
-        private const val PREF_NOTE_KEY = "note_text"
         const val ACTION_STOP = "com.floatingapps.app.ACTION_STOP"
     }
 
@@ -38,6 +38,7 @@ class FloatingBubbleService : Service() {
     private var bubbleView: View? = null
     private var panelView: View? = null
     private lateinit var bubbleParams: WindowManager.LayoutParams
+    private var pickerAdapter: AppListAdapter? = null
 
     private var initialX = 0
     private var initialY = 0
@@ -51,6 +52,7 @@ class FloatingBubbleService : Service() {
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         createNotificationChannel()
         startForeground(NOTIF_ID, buildNotification())
+        ShizukuShellManager.bindIfNeeded()
         addBubble()
     }
 
@@ -191,14 +193,21 @@ class FloatingBubbleService : Service() {
         params.x = bubbleParams.x
         params.y = bubbleParams.y + 120
 
-        val editText = view.findViewById<EditText>(R.id.etNote)
-        val prefs: SharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        editText.setText(prefs.getString(PREF_NOTE_KEY, ""))
+        val rv = view.findViewById<RecyclerView>(R.id.rvPickerApps)
+        rv.layoutManager = LinearLayoutManager(this)
+        val adapter = AppListAdapter { app -> launchFloating(app) }
+        pickerAdapter = adapter
+        rv.adapter = adapter
+        AppListLoader.load(this) { apps -> adapter.submitList(apps) }
 
-        view.findViewById<View>(R.id.btnSave).setOnClickListener {
-            prefs.edit().putString(PREF_NOTE_KEY, editText.text.toString()).apply()
-            Toast.makeText(this, getString(R.string.note_saved), Toast.LENGTH_SHORT).show()
-        }
+        val etSearch = view.findViewById<EditText>(R.id.etPickerSearch)
+        etSearch.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+            override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {
+                adapter.filter(s?.toString().orEmpty())
+            }
+            override fun afterTextChanged(s: Editable?) {}
+        })
 
         view.findViewById<ImageView>(R.id.btnClosePanel).setOnClickListener {
             removePanel()
@@ -212,6 +221,21 @@ class FloatingBubbleService : Service() {
         }
     }
 
+    private fun launchFloating(app: FloatableApp) {
+        if (!ShizukuShellManager.isReady()) {
+            Toast.makeText(this, getString(R.string.shizuku_not_ready), Toast.LENGTH_SHORT).show()
+            return
+        }
+        val result = ShizukuShellManager.launchFloating(app.packageName, app.activityName)
+        val ok = !result.contains("Error", ignoreCase = true)
+        Toast.makeText(
+            this,
+            if (ok) getString(R.string.launch_success, app.label) else getString(R.string.launch_failed, app.label),
+            Toast.LENGTH_SHORT
+        ).show()
+        removePanel()
+    }
+
     private fun removePanel() {
         try {
             panelView?.let { windowManager.removeView(it) }
@@ -219,5 +243,6 @@ class FloatingBubbleService : Service() {
             // panel already detached, ignore safely
         }
         panelView = null
+        pickerAdapter = null
     }
 }

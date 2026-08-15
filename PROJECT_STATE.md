@@ -1,85 +1,77 @@
 # PROJECT_STATE.md — Floating Apps
 
-## Ringkasan
-Aplikasi Android native (Kotlin) yang menampilkan floating bubble draggable
-di atas aplikasi lain (gaya chat-head), dengan panel catatan cepat, crash
-logger bawaan, dan CI/CD otomatis via GitHub Actions ke GitHub Release.
+## Ringkasan (Pivot v2.0.0)
+**Konsep diperbaiki total setelah feedback user.** Floating Apps sekarang
+adalah launcher yang menjalankan APLIKASI LAIN di jendela floating/freeform
+yang bisa disentuh langsung (bukan overlay catatan buatan sendiri seperti
+v1.0.0). Berguna terutama untuk app yang tidak mendukung split-screen/resize
+bawaan ("app yang kaku").
 
-## Identitas Proyek
-- Nama App: Floating Apps
-- Package/applicationId: com.floatingapps.app
-- rootProject.name: FloatingApps
-- Versi: 1.0.0 (versionCode 1)
-- Batch: v1_Batch2 (Fix)
+## Kenapa Butuh Shizuku (bukan sekadar SYSTEM_ALERT_WINDOW)
+Android sengaja membatasi app biasa agar tidak bisa mengontrol/mengirim
+sentuhan ke app lain — proteksi keamanan OS, bukan pilihan desain. Tanpa
+root, satu-satunya jalan legal & terbuka publik untuk membuat jendela app
+lain yang BENAR-BENAR interaktif (native, bukan proyeksi/mirror) adalah
+meminta OS melakukannya sendiri lewat `am start --windowingMode 5` (WINDOWING_
+MODE_FREEFORM) — perintah level shell yang hanya bisa dijalankan dengan
+privilese shell/adb. Shizuku menjembatani itu tanpa root, lewat pairing
+Wireless debugging sekali di awal.
+
+## Arsitektur Inti
+1. **ShellUserService** (`IShellService.aidl` + `ShellUserService.kt`):
+   proses terpisah yang dijalankan Shizuku dengan UID shell. Hanya
+   menjalankan `ProcessBuilder` shell command apa adanya (argv array, bukan
+   string shell — jadi aman dari masalah escaping) dan mengembalikan output.
+2. **ShizukuShellManager**: singleton yang mengurus bind/permission Shizuku,
+   dan 2 operasi inti:
+   - `enableFreeformSupport()` — sekali per koneksi, menjalankan
+     `settings put global enable_freeform_support 1` &
+     `settings put global force_resizable_activities 1` lewat shell. Baris
+     kedua ini yang membuat app yang mendeklarasikan dirinya non-resizable
+     tetap bisa dipaksa floating.
+   - `launchFloating(pkg, activity)` — `am start --windowingMode 5 -n pkg/activity`.
+3. **MainActivity**: checklist setup (Izin Overlay + Shizuku) di atas,
+   pencarian + daftar semua app terpasang di bawah (RecyclerView). Tap app →
+   floating langsung.
+4. **FloatingBubbleService**: bubble draggable (SYSTEM_ALERT_WINDOW, tidak
+   perlu Shizuku) — tap bubble membuka panel picker app yang sama (search +
+   list) untuk akses cepat tanpa balik ke app utama.
+5. **CrashHandler**: TIDAK berubah dari v1 — MediaStore (API29+)/app storage
+   fallback, FIFO 50 log. Lihat versi sebelumnya untuk detail.
+
+## Keterbatasan Jujur (bukan bug, tapi batas platform Android)
+- **Shizuku wajib di-pairing ulang setiap device reboot** (kecuali root),
+  ini keterbatasan Shizuku sendiri, bukan Floating Apps — user perlu buka
+  app Shizuku & pairing lagi lewat Wireless debugging setelah restart HP.
+- **Freeform tidak dijamin 100% di semua HP.** `enable_freeform_support`
+  butuh dukungan framework Android di build OS tsb; sebagian besar
+  Android 10+ AOSP-based mendukung (dipakai infrastruktur split-screen),
+  tapi sebagian ROM OEM yang sangat dikunci bisa saja mengabaikannya.
+  Ini keterbatasan platform, bukan sesuatu yang bisa "diperbaiki" dari sisi
+  app tanpa root.
+- **App pre-v11 Shizuku** (sangat jarang, <5% menurut data Shizuku sendiri)
+  tidak difallback ke alur permission lama — disederhanakan untuk v2.0.0.
+
+## Protected Assets Checklist (batch ini)
+- [x] AndroidManifest.xml — provider Shizuku + `<queries>` package visibility
+- [x] app/build.gradle — deps Shizuku 13.1.5 + recyclerview 1.3.2, `aidl true`
+- [x] MainActivity.kt — rewrite penuh
+- [x] .gitignore, .gitattributes, .github/workflows/release.yml — tidak diubah
+- [x] release.yml sudah pakai perbaikan `secrets` context dari batch sebelumnya
+
+## Confidence Rating: 90%
+API Shizuku (bindUserService, OnRequestPermissionResultListener, AIDL
+destroy()=16777114) diverifikasi lewat web search terhadap dokumentasi resmi
+RikkaApps/Shizuku-API & contoh kode publik — bukan hanya dari memori. Risiko
+residual terbesar: perilaku freeform window itu sendiri device-dependent
+(lihat "Keterbatasan Jujur" di atas) dan belum pernah dikompilasi sungguhan
+di sandbox ini (tidak ada Android SDK/network). Build pertama sebaiknya
+dites di device yang sudah Shizuku-ready.
+
+## Batch: v2_Batch3 (Pivot arsitektur — Atomic Change)
 
 ## Known-Fix Log
 - v1_Batch2: `secrets` context tidak boleh dipakai langsung di `if:` pada
-  GitHub Actions ("Unrecognized named-value: 'secrets'"). Diperbaiki di
-  `.github/workflows/release.yml` — pengecekan secret dipindah ke dalam
-  `run:` (bash `if [ -n "$VAR" ]`) via `env:`, bukan YAML-level `if:`.
-
-## Stack & Kompatibilitas (fixed, jangan diubah tanpa alasan kuat)
-- AGP 8.5.0, Gradle 8.7, Kotlin 1.9.24, JDK 17
-- compileSdk 34, targetSdk 34, minSdk 26 (Android 8.0+)
-- minSdk sengaja 26 agar bisa pakai TYPE_APPLICATION_OVERLAY & Adaptive Icon
-  langsung tanpa cabang kode legacy (mengurangi risiko bug).
-
-## Keputusan Arsitektur Penting
-1. **gradlew/gradle-wrapper.jar TIDAK disertakan dalam ZIP.** File jar biner
-   tidak bisa dibuat aman di sandbox pembuatan proyek ini. Ini TIDAK
-   menghalangi workflow: skrip Termux user hanya melakukan git init/commit/push,
-   bukan build lokal. Build APK sepenuhnya terjadi di GitHub Actions memakai
-   Gradle sistem (`gradle/actions/setup-gradle`), bukan wrapper. Jika project
-   dibuka di Android Studio, wrapper akan digenerate otomatis saat Sync.
-2. **Signing kondisional**: app/build.gradle mengecek keberadaan
-   `keystore.properties` di root. Jika ada → signed release build. Jika
-   tidak ada → fallback ke debug signing agar APK tetap ter-build & ter-install
-   (tidak pernah gagal build hanya karena belum setup keystore).
-3. **Foreground service type**: `specialUse` (Android 14 mewajibkan tipe
-   eksplisit; tidak ada kategori resmi untuk overlay bubble).
-4. **CrashHandler** (lihat bagian Crash Logger).
-5. Tidak ada NavGraph / DB Schema — di luar scope v1 (app tidak memakai
-   Jetpack Navigation maupun database lokal).
-
-## Crash Logger (sesuai spesifikasi)
-- Entry point: `Thread.setDefaultUncaughtExceptionHandler` di `App.kt`.
-- API 29+: tulis ke MediaStore → `Documents/FloatingApps/logs/crash_<timestamp>_<uuid>.txt`,
-  tanpa permission legacy.
-- API 26–28: fallback ke `getExternalFilesDir("logs")` (juga tanpa permission).
-- Fail-safe: seluruh proses penulisan log dibungkus try-catch; error selalu
-  diteruskan ke default handler agar sistem tetap bisa menampilkan crash dialog.
-- Retention: FIFO, maksimal 50 file log, file tertua dihapus otomatis.
-- Metadata per log: versionName, OS release+SDK, manufacturer+model,
-  timestamp, nama thread, full stack trace.
-
-## Fitur v1.0.0
-- MainActivity: request izin overlay (Settings.ACTION_MANAGE_OVERLAY_PERMISSION),
-  request POST_NOTIFICATIONS (API 33+), toggle start/stop service, indikator status.
-- FloatingBubbleService: bubble draggable via WindowManager, tap → buka/tutup
-  panel catatan cepat (tersimpan di SharedPreferences), notifikasi foreground
-  dengan tombol Stop langsung.
-- Semua operasi WindowManager (add/update/remove view) dibungkus try-catch
-  agar tidak crash bila izin overlay dicabut saat service berjalan.
-
-## Protected Assets Checklist (batch ini)
-- [x] AndroidManifest.xml — permissions & komponen sinkron dengan kode Kotlin
-- [x] build.gradle (root) & app/build.gradle
-- [x] settings.gradle
-- [x] MainActivity.kt, App.kt (Application)
-- [x] .gitignore (melindungi release.keystore & keystore.properties)
-- [x] .gitattributes
-- [x] .github/workflows/release.yml — publish ke **GitHub Release** (bukan
-      sekadar Actions artifact), APK otomatis muncul di sidebar repo
-- [ ] release.keystore — belum ada (user generate sendiri via keytool, lihat README)
-- [ ] NavGraph / DB Schema — N/A, tidak dipakai di v1
-
-## Confidence Rating: 96%
-Seluruh kode mengikuti pola Android/Kotlin standar & versi tool yang sudah
-matang (AGP 8.5/Gradle 8.7/Kotlin 1.9.24 — kombinasi yang sudah lama stabil).
-Belum dijalankan lewat compiler sungguhan (sandbox ini tidak punya Android
-SDK/network) — build pertama di GitHub Actions sebaiknya dipantau. Tidak ada
-Core/Protected Assets yang hilang, dotfiles utuh, manifest sinkron dengan kode.
-
-## File Count
-Total file dalam ZIP ini: 32 (project baru, dikecualikan dari batas 10
-file/batch karena ini Atomic Change — scaffold proyek awal).
+  GitHub Actions. Diperbaiki lewat `env:` + cek bash di dalam `run:`.
+- v2_Batch3: Ganti total mekanisme dari "bubble+catatan lokal" menjadi
+  "launcher app lain ke freeform window via Shizuku", sesuai niat awal user.

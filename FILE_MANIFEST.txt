@@ -1,5 +1,5 @@
-FLOATING APPS — FILE MANIFEST (v1_Batch1 / Initial Setup)
-Total: 32 file
+FLOATING APPS — FILE MANIFEST (v2_Batch3 / Architecture Pivot)
+Total: 37 file
 
 [PROTECTED - Edit Parsial Only]
 AndroidManifest.xml              app/src/main/AndroidManifest.xml
@@ -12,16 +12,23 @@ App.kt (Application)             app/src/main/java/com/floatingapps/app/App.kt
 .gitattributes                   .gitattributes
 release.yml (workflow)           .github/workflows/release.yml
 
-[CORE LOGIC]
+[CORE LOGIC — Shizuku / Freeform launcher]
+IShellService.aidl               app/src/main/aidl/com/floatingapps/app/IShellService.aidl
+ShellUserService.kt              app/src/main/java/com/floatingapps/app/ShellUserService.kt
+ShizukuShellManager.kt           app/src/main/java/com/floatingapps/app/ShizukuShellManager.kt
 FloatingBubbleService.kt         app/src/main/java/com/floatingapps/app/FloatingBubbleService.kt
 CrashHandler.kt                  app/src/main/java/com/floatingapps/app/CrashHandler.kt
+FloatableApp.kt                  app/src/main/java/com/floatingapps/app/FloatableApp.kt
+AppListLoader.kt                 app/src/main/java/com/floatingapps/app/AppListLoader.kt
+AppListAdapter.kt                app/src/main/java/com/floatingapps/app/AppListAdapter.kt
 
 [RESOURCES - Editable]
 proguard-rules.pro               app/proguard-rules.pro
 gradle.properties                gradle.properties
 activity_main.xml                app/src/main/res/layout/activity_main.xml
 layout_bubble.xml                app/src/main/res/layout/layout_bubble.xml
-layout_bubble_expanded.xml       app/src/main/res/layout/layout_bubble_expanded.xml
+layout_bubble_expanded.xml       app/src/main/res/layout/layout_bubble_expanded.xml (app picker panel)
+layout_app_list_item.xml         app/src/main/res/layout/layout_app_list_item.xml
 strings.xml                      app/src/main/res/values/strings.xml
 colors.xml                       app/src/main/res/values/colors.xml
 themes.xml                       app/src/main/res/values/themes.xml
@@ -43,6 +50,10 @@ FILE_MANIFEST.txt                FILE_MANIFEST.txt (file ini)
 
 [SENGAJA TIDAK ADA]
 gradlew / gradlew.bat / gradle/wrapper/gradle-wrapper.jar
-  -> alasan & dampak: lihat PROJECT_STATE.md poin "Keputusan Arsitektur Penting #1"
+  -> lihat PROJECT_STATE.md batch v1 untuk alasan
 release.keystore
-  -> harus di-generate sendiri oleh user (lihat README.md)
+  -> di-generate sendiri oleh user (lihat FloatingApps_secrets.txt sebelumnya)
+
+[DIHAPUS DI BATCH INI]
+Fitur "Catatan Cepat" (SharedPreferences notes, EditText etNote/btnSave)
+  -> diganti app picker (Shizuku freeform launcher) sesuai maksud awal user
