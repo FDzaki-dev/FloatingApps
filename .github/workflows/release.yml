@@ -1,0 +1,84 @@
+name: Build and Release APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: 8.7
+
+      - name: Decode signing keystore (if provided)
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KS_KEYPASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > release.keystore
+            cat > keystore.properties << EOF
+          storeFile=../release.keystore
+          storePassword=$KS_PASS
+          keyAlias=$KS_ALIAS
+          keyPassword=$KS_KEYPASS
+          EOF
+            echo "Signing keystore decoded, will build a properly signed release."
+          else
+            echo "No ANDROID_KEYSTORE_BASE64 secret found, will fall back to debug signing."
+          fi
+
+      - name: Build release APK
+        run: gradle assembleRelease --stacktrace
+
+      - name: Read app version from build.gradle
+        id: appver
+        run: |
+          NAME=$(grep -oP 'versionName\s+"\K[^"]+' app/build.gradle || echo "0.0.0")
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Determine release tag
+        id: tag
+        run: echo "tag=v${{ steps.appver.outputs.name }}-build${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+
+      # Never publish AGP's generic "app-release.apk" - it is meaningless once
+      # downloaded (no app name/version/build#), collides across releases in
+      # a browser's Downloads folder, and gives users/testers zero context
+      # about which build they're holding. Rename to a self-describing,
+      # collision-proof filename before publishing.
+      - name: Rename APK to a descriptive release artifact name
+        id: apk
+        run: |
+          SRC="app/build/outputs/apk/release/app-release.apk"
+          if [ ! -f "$SRC" ]; then
+            SRC="app/build/outputs/apk/release/app-release-unsigned.apk"
+          fi
+          DEST="app/build/outputs/apk/release/FloatingApps-${{ steps.tag.outputs.tag }}.apk"
+          cp "$SRC" "$DEST"
+          echo "path=$DEST" >> "$GITHUB_OUTPUT"
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: "Floating Apps ${{ steps.tag.outputs.tag }}"
+          generate_release_notes: true
+          files: ${{ steps.apk.outputs.path }}

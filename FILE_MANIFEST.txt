@@ -1,0 +1,75 @@
+FLOATING APPS — FILE MANIFEST (v2_Batch5 / Scroll Fix + APK Naming + Docs Reorder + Modular Anti-Crash Architecture)
+Total: 51 file
+
+[PROTECTED - Edit Parsial Only]
+AndroidManifest.xml              app/src/main/AndroidManifest.xml (+REQUEST_IGNORE_BATTERY_OPTIMIZATIONS v2_Batch5)
+build.gradle (root)              build.gradle
+build.gradle (module)            app/build.gradle (+2 deps, versionCode 4/2.2.0 v2_Batch5)
+settings.gradle                  settings.gradle
+MainActivity.kt                  app/src/main/java/com/floatingapps/app/MainActivity.kt (rewrite v2_Batch5)
+App.kt (Application)             app/src/main/java/com/floatingapps/app/App.kt
+.gitignore                       .gitignore
+.gitattributes                   .gitattributes
+release.yml (workflow)           .github/workflows/release.yml (APK naming fix v2_Batch5)
+
+[CORE LOGIC — Shizuku / Freeform launcher]
+IShellService.aidl               app/src/main/aidl/com/floatingapps/app/IShellService.aidl
+ShellUserService.kt              app/src/main/java/com/floatingapps/app/ShellUserService.kt
+ShizukuShellManager.kt           app/src/main/java/com/floatingapps/app/ShizukuShellManager.kt
+FloatingBubbleService.kt         app/src/main/java/com/floatingapps/app/FloatingBubbleService.kt (rewrite v2_Batch5)
+CrashHandler.kt                  app/src/main/java/com/floatingapps/app/CrashHandler.kt
+FloatableApp.kt                  app/src/main/java/com/floatingapps/app/FloatableApp.kt
+AppListLoader.kt                 app/src/main/java/com/floatingapps/app/AppListLoader.kt
+AppListAdapter.kt                app/src/main/java/com/floatingapps/app/AppListAdapter.kt
+FavoritesManager.kt              app/src/main/java/com/floatingapps/app/FavoritesManager.kt
+FavoritesRowBinder.kt            app/src/main/java/com/floatingapps/app/FavoritesRowBinder.kt
+
+[CORE LOGIC — Modular Bubble Architecture (NEW v2_Batch5)]
+OverlayPermissionHelper.kt       app/src/main/java/com/floatingapps/app/core/overlay/OverlayPermissionHelper.kt
+OverlayWindowController.kt       app/src/main/java/com/floatingapps/app/core/overlay/OverlayWindowController.kt
+BatteryOptimizationHelper.kt     app/src/main/java/com/floatingapps/app/core/power/BatteryOptimizationHelper.kt
+ScreenMetricsProvider.kt         app/src/main/java/com/floatingapps/app/core/touch/ScreenMetricsProvider.kt
+SnapEdgeAnimator.kt              app/src/main/java/com/floatingapps/app/core/touch/SnapEdgeAnimator.kt
+FloatingDragTouchListener.kt     app/src/main/java/com/floatingapps/app/core/touch/FloatingDragTouchListener.kt
+BubbleStateBus.kt                app/src/main/java/com/floatingapps/app/core/ipc/BubbleStateBus.kt
+
+[RESOURCES - Editable]
+proguard-rules.pro               app/proguard-rules.pro
+gradle.properties                gradle.properties
+activity_main.xml                app/src/main/res/layout/activity_main.xml (NestedScrollView fix v2_Batch5)
+layout_bubble.xml                app/src/main/res/layout/layout_bubble.xml
+layout_bubble_expanded.xml       app/src/main/res/layout/layout_bubble_expanded.xml
+layout_app_list_item.xml         app/src/main/res/layout/layout_app_list_item.xml
+layout_favorite_slot.xml         app/src/main/res/layout/layout_favorite_slot.xml
+strings.xml                      app/src/main/res/values/strings.xml (+step3/battery strings v2_Batch5)
+colors.xml                       app/src/main/res/values/colors.xml
+themes.xml                       app/src/main/res/values/themes.xml
+bubble_background.xml            app/src/main/res/drawable/bubble_background.xml
+panel_background.xml             app/src/main/res/drawable/panel_background.xml
+favorite_slot_background.xml     app/src/main/res/drawable/favorite_slot_background.xml
+ic_close.xml                     app/src/main/res/drawable/ic_close.xml
+ic_bubble.xml                    app/src/main/res/drawable/ic_bubble.xml
+ic_launcher_foreground.xml       app/src/main/res/drawable/ic_launcher_foreground.xml
+ic_launcher.xml                  app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+ic_launcher_round.xml            app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+backup_rules.xml                 app/src/main/res/xml/backup_rules.xml
+data_extraction_rules.xml        app/src/main/res/xml/data_extraction_rules.xml
+
+[DOCS — info terbaru selalu di paling atas tiap file]
+README.md                        README.md (Status Terkini di atas v2_Batch5)
+CHANGELOG.md                     CHANGELOG.md (newest-first, tetap)
+PROJECT_STATE.md                 PROJECT_STATE.md (dirombak latest-on-top v2_Batch5)
+FILE_MANIFEST.txt                FILE_MANIFEST.txt (file ini)
+
+[SENGAJA TIDAK ADA]
+gradlew / gradlew.bat / gradle/wrapper/gradle-wrapper.jar  -> workflow pakai
+  `gradle` sistem langsung, lihat PROJECT_STATE.md batch v1
+release.keystore                 -> di-generate sendiri oleh user
+
+[ATURAN AKTIF HASIL BATCH-BATCH SEBELUMNYA]
+- Semua LayoutInflater.from(...) di dalam Service/non-Activity WAJIB pakai
+  ContextThemeWrapper(this, R.style.Theme_FloatingApps).
+- Semua WindowManager.addView/updateViewLayout/removeView WAJIB lewat
+  OverlayWindowController (v2_Batch5) — tidak boleh dipanggil langsung lagi.
+- StateFlow collect dari Activity WAJIB lewat
+  lifecycleScope.launch { repeatOnLifecycle(STARTED) { ... } } (v2_Batch5).

@@ -1,0 +1,51 @@
+<resources>
+    <string name="app_name">Floating Apps</string>
+    <string name="main_description">Jalankan aplikasi lain di jendela floating yang bisa disentuh langsung — cocok untuk app yang tidak mendukung mode split-screen/resizable bawaan.</string>
+
+    <string name="step1_title">1. Izin Overlay</string>
+    <string name="overlay_status_ok">Aktif</string>
+    <string name="overlay_status_pending">Belum aktif — dibutuhkan untuk bubble akses cepat</string>
+    <string name="grant_permission">Izinkan Tampil di Atas Aplikasi Lain</string>
+    <string name="permission_granted">Izin Sudah Aktif</string>
+    <string name="need_overlay_permission">Aktifkan izin overlay terlebih dahulu</string>
+
+    <string name="step2_title">2. Shizuku (untuk sentuhan interaktif)</string>
+    <string name="shizuku_status_not_installed">Belum terpasang</string>
+    <string name="shizuku_status_not_running">Terpasang, tapi belum aktif — buka Shizuku &amp; pairing lewat Wireless debugging</string>
+    <string name="shizuku_status_no_permission">Aktif, izin belum diberikan ke Floating Apps</string>
+    <string name="shizuku_status_connecting">Menghubungkan…</string>
+    <string name="shizuku_status_ready">Siap — floating window akan interaktif penuh</string>
+    <string name="shizuku_action_install">Install Shizuku</string>
+    <string name="shizuku_action_open">Buka Shizuku</string>
+    <string name="shizuku_action_permission">Minta Izin Shizuku</string>
+    <string name="shizuku_action_ready">Siap ✓</string>
+    <string name="shizuku_ready">Shizuku siap digunakan</string>
+    <string name="shizuku_denied">Izin Shizuku ditolak</string>
+    <string name="shizuku_not_ready">Shizuku belum siap — selesaikan setup dulu</string>
+
+    <string name="step3_title">3. Latar Belakang &amp; Baterai</string>
+    <string name="battery_status_pending">Sistem bisa hentikan bubble di background demi hemat baterai. Izinkan agar tetap jalan.</string>
+    <string name="battery_status_ok">Sudah diizinkan berjalan bebas dari optimasi baterai.</string>
+    <string name="battery_action_request">Izinkan Berjalan di Background</string>
+    <string name="battery_action_oem">Pengaturan OEM Tambahan (Opsional)</string>
+    <string name="oem_not_found">Tidak ada pengaturan tambahan yang terdeteksi di perangkat ini.</string>
+
+    <string name="favorites_title">Favorit — tap untuk langsung floating</string>
+    <string name="favorites_hint">Tekan &amp; tahan aplikasi di daftar bawah untuk pin ke slot favorit di atas</string>
+    <string name="pinned_added">%1$s ditambahkan ke Favorit</string>
+    <string name="pinned_removed">%1$s dihapus dari Favorit</string>
+    <string name="minimize_hint">Jendela floating punya tombol minimize/close bawaan di title bar-nya. Tap ikon app yang sama lagi (atau di Favorit) untuk memunculkannya kembali ke depan.</string>
+
+    <string name="start_bubble">Mulai Bubble Akses Cepat</string>
+    <string name="stop_bubble">Hentikan Bubble</string>
+
+    <string name="search_hint">Cari aplikasi…</string>
+    <string name="panel_title">Pilih Aplikasi</string>
+    <string name="close">Tutup</string>
+    <string name="launch_success">%1$s dibuka di jendela floating</string>
+    <string name="launch_failed">Gagal membuka %1$s di floating window</string>
+
+    <string name="notif_channel_name">Floating Bubble</string>
+    <string name="notif_channel_desc">Notifikasi latar belakang untuk layanan floating bubble</string>
+    <string name="notif_running_text">Bubble akses cepat sedang aktif</string>
+</resources>
