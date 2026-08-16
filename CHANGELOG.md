@@ -1,6 +1,23 @@
 # CHANGELOG
 > Terbaru selalu di paling atas.
 
+## [2.4.1] — v2_Batch7-Hotfix1 — Crash Fix (Launch Verification)
+Ditemukan dari crash log bawaan app (Crash Logger), dianalisa tanpa perlu
+Logcat/ADB.
+
+### Fixed
+- **Crash total saat launch** sejak v2.4.0: `ExceptionInInitializerError` →
+  `PatternSyntaxException` di `TaskIdParser.kt` — regex `t(\d+)}` punya `}`
+  tanpa escape, ditolak regex engine ICU Android 16 (desktop JVM toleran,
+  device tidak). Fix: `t(\d+)\}`.
+- Hardening: panggilan `TaskIdParser.findTaskId()` di `LaunchVerification`
+  dan `FloatingWindowController.bringToFront()` sekarang dibungkus
+  try-catch, konsisten dengan pola defensive-wrapping di seluruh codebase —
+  mencegah kelas kegagalan sama terulang di masa depan.
+
+### Changed
+- `versionCode 7` / `versionName "2.4.1"`.
+
 ## [2.4.0] — v2_Batch7 — True Bring-to-Front, Window Close, Session Persistence
 Atomic Change (15 file) menjawab P0 #4 (penuh), separuh P0 #3 (close +
 switch, belum resize/reposition/maximize), dan P0 #7 (persistensi riwayat

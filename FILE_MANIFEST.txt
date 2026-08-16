@@ -1,10 +1,10 @@
-FLOATING APPS — FILE MANIFEST (v2_Batch7 / True Bring-to-Front + Window Close + Session Persistence)
-Total: 60 file
+FLOATING APPS — FILE MANIFEST (v2_Batch7-Hotfix1 / Crash Fix: TaskIdParser regex)
+Total: 60 file (v2_Batch7-Hotfix1: 3 file diubah, tidak ada file baru/dihapus)
 
 [PROTECTED - Edit Parsial Only]
 AndroidManifest.xml              app/src/main/AndroidManifest.xml (+REQUEST_IGNORE_BATTERY_OPTIMIZATIONS v2_Batch5)
 build.gradle (root)              build.gradle
-build.gradle (module)            app/build.gradle (versionCode 6/2.4.0 v2_Batch7, no new deps)
+build.gradle (module)            app/build.gradle (versionCode 7/2.4.1 v2_Batch7-Hotfix1, no new deps)
 settings.gradle                  settings.gradle
 MainActivity.kt                  app/src/main/java/com/floatingapps/app/MainActivity.kt (parsial v2_Batch7: BringingToFront outcome + closeFloatingFavorite via long-press)
 App.kt (Application)             app/src/main/java/com/floatingapps/app/App.kt (parsial v2_Batch7: FloatingSessionManager.init())
@@ -28,15 +28,15 @@ FavoritesRowBinder.kt            app/src/main/java/com/floatingapps/app/Favorite
 FloatingSessionState.kt          app/src/main/java/com/floatingapps/app/core/session/FloatingSessionState.kt (parsial v2_Batch7: +RESTORED)
 FloatingSession.kt               app/src/main/java/com/floatingapps/app/core/session/FloatingSession.kt (parsial v2_Batch7: +taskId, +duplicateSuspected)
 FloatingSessionManager.kt        app/src/main/java/com/floatingapps/app/core/session/FloatingSessionManager.kt (parsial v2_Batch7: +init/sessionForApp/onTaskIdResolved/onBroughtToFront/onDuplicateWindowSuspected, auto-persist per transition)
-LaunchVerification.kt            app/src/main/java/com/floatingapps/app/core/session/LaunchVerification.kt (parsial v2_Batch7: taskId resolve on verify)
+LaunchVerification.kt            app/src/main/java/com/floatingapps/app/core/session/LaunchVerification.kt (parsial v2_Batch7: taskId resolve on verify; HOTFIX v2_Batch7-Hotfix1: try-catch hardening around TaskIdParser call)
 FloatingLaunchCoordinator.kt     app/src/main/java/com/floatingapps/app/core/session/FloatingLaunchCoordinator.kt (parsial v2_Batch7: raise-vs-relaunch routing, +BringingToFront outcome)
 SessionPersistence.kt            app/src/main/java/com/floatingapps/app/core/session/SessionPersistence.kt (NEW v2_Batch7 — disk-backed session history, FIFO cap 20)
 SystemReadiness.kt               app/src/main/java/com/floatingapps/app/core/capability/SystemReadiness.kt
 CapabilityManager.kt             app/src/main/java/com/floatingapps/app/core/capability/CapabilityManager.kt
 
 [CORE LOGIC — Window Control (NEW v2_Batch7)]
-TaskIdParser.kt                  app/src/main/java/com/floatingapps/app/core/window/TaskIdParser.kt (best-effort taskId extraction from dumpsys text)
-FloatingWindowController.kt      app/src/main/java/com/floatingapps/app/core/window/FloatingWindowController.kt (bringToFront + close, via Shizuku shell)
+TaskIdParser.kt                  app/src/main/java/com/floatingapps/app/core/window/TaskIdParser.kt (HOTFIX v2_Batch7-Hotfix1: escaped unescaped brace regex crash)
+FloatingWindowController.kt      app/src/main/java/com/floatingapps/app/core/window/FloatingWindowController.kt (bringToFront + close, via Shizuku shell; HOTFIX v2_Batch7-Hotfix1: try-catch hardening around TaskIdParser call)
 
 [CORE LOGIC — Modular Bubble Architecture (v2_Batch5)]
 OverlayPermissionHelper.kt       app/src/main/java/com/floatingapps/app/core/overlay/OverlayPermissionHelper.kt

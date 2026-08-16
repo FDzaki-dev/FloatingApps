@@ -48,9 +48,18 @@ object LaunchVerification {
                     // Best-effort - see TaskIdParser doc. Powers
                     // core.window.FloatingWindowController's bring-to-front
                     // same-window confirmation (P0 #4). Never blocks the
-                    // verification outcome itself if this comes back null.
-                    TaskIdParser.findTaskId(dump, app.packageName)?.let {
-                        FloatingSessionManager.onTaskIdResolved(key, it)
+                    // verification outcome itself if this comes back null
+                    // OR throws - a hotfix (v2_Batch7 crash log
+                    // dd2b3cf4, PatternSyntaxException on Android 16's ICU
+                    // regex engine) showed an unguarded parser call here can
+                    // crash this whole coroutine; wrapped defensively so the
+                    // same failure class can never do that again.
+                    try {
+                        TaskIdParser.findTaskId(dump, app.packageName)?.let {
+                            FloatingSessionManager.onTaskIdResolved(key, it)
+                        }
+                    } catch (e: Exception) {
+                        // Swallow - task ID is metadata, not correctness-critical.
                     }
                     return
                 }

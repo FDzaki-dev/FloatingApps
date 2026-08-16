@@ -60,7 +60,13 @@ object FloatingWindowController {
         } catch (e: Exception) {
             ""
         }
-        val afterTaskId = TaskIdParser.findTaskId(dump, app.packageName)
+        // Best-effort, defensively wrapped - see LaunchVerification's
+        // matching fix (crash log dd2b3cf4) for why.
+        val afterTaskId = try {
+            TaskIdParser.findTaskId(dump, app.packageName)
+        } catch (e: Exception) {
+            null
+        }
 
         return when {
             afterTaskId == null -> {

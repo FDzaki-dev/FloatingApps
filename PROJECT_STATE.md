@@ -3,8 +3,42 @@
 > bawah — sisipkan di atas "Known-Fix Log" section, entri lama tetap ada
 > di bawahnya untuk histori.
 
-## 🟢 STATUS TERKINI — v2.4.0 / Batch7 (2026-08-16)
-**Confidence Rating: 94%**
+## 🟢 STATUS TERKINI — v2.4.1 / Batch7-Hotfix1 (2026-08-17)
+**Confidence Rating: 97%**
+
+### 🔴 Hotfix v2.4.1 — Crash saat launch (dari crash log user, `dd2b3cf4`)
+**Dianalisa dari file crash log bawaan app (Crash Logger), sesuai Debug
+Priority — TIDAK perlu minta Logcat/ADB, root cause sudah jelas dari stack
+trace saja.**
+
+- **Gejala**: app crash total setiap kali launch floating dicoba, sejak
+  v2.4.0/Batch7.
+- **Root cause**: `ExceptionInInitializerError` →
+  `PatternSyntaxException` di `TaskIdParser.kt:21` — pattern regex
+  `t(\d+)}` punya `}` tanpa escape. Desktop JVM toleran terhadap `}` lepas,
+  tapi regex engine ICU di Android 16 (device pelapor: Infinix X6855) strict
+  dan menolaknya. Karena ini terjadi di static initializer object Kotlin
+  (`<clinit>`), SETIAP panggilan ke `TaskIdParser` sesudahnya juga gagal
+  selama proses app hidup — jadi setiap `LaunchVerification.verify()` crash
+  tak tertangkap di coroutine main-thread.
+- **Fix**: escape jadi `t(\d+)\}` di `TaskIdParser.kt`. 2 pattern lain
+  (`taskid[=:]...`, `task\s*#...`) tidak punya brace, aman, tidak disentuh.
+- **Hardening tambahan** (bukan cuma tutup gejala): panggilan
+  `TaskIdParser.findTaskId()` di `LaunchVerification.kt` DAN
+  `FloatingWindowController.bringToFront()` sekarang dibungkus try-catch —
+  keduanya sebelumnya tidak terlindungi, konsisten dengan pola
+  defensive-wrapping yang sudah dipakai di semua pemanggilan best-effort
+  lain di codebase ini (`dumpActivityState`, `SessionPersistence`, dst).
+  Ini mencegah KELAS kegagalan yang sama (parser exception apa pun di masa
+  depan) crash total lagi, bukan cuma memperbaiki 1 baris regex.
+- **File disentuh (3, non-atomic, jauh di bawah limit 10)**:
+  `core/window/TaskIdParser.kt` (fix), `core/session/LaunchVerification.kt`
+  (hardening), `core/window/FloatingWindowController.kt` (hardening),
+  `app/build.gradle` (versionCode 7 / versionName "2.4.1").
+- **Tidak ada regresi scope** — P0 #3/#4/#7 status sama persis seperti
+  Batch7 (lihat body di bawah), hotfix ini murni stabilitas.
+
+---
 
 Batch ini adalah **Atomic Change** (15 file > limit 10 — lihat alasan di
 bawah) yang menjawab **P0 #4** (True Bring-to-Front, penuh), separuh **P0
@@ -217,6 +251,10 @@ registry, satu tidak).
   "Unified setup/readiness state" batch berikutnya.
 
 ## Known-Fix Log (terbaru di atas)
+- **v2_Batch7_Hotfix1** (2026-08-17): Crash total saat launch —
+  `PatternSyntaxException` (regex `}` tanpa escape, ICU Android 16 strict)
+  di `TaskIdParser.kt`, ditemukan dari crash log user (`dd2b3cf4`). Fix +
+  hardening try-catch — lihat "STATUS TERKINI" di atas.
 - **v2_Batch7** (2026-08-16): `core/window/` (TaskIdParser +
   FloatingWindowController: bringToFront + close) + SessionPersistence +
   FloatingSessionManager.init/sessionForApp + FloatingLaunchCoordinator

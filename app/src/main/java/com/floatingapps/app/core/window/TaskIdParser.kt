@@ -18,7 +18,7 @@ package com.floatingapps.app.core.window
 object TaskIdParser {
 
     private val PATTERNS = listOf(
-        Regex("""t(\d+)}"""),           // "...pkg/.Activity t42}"
+        Regex("""t(\d+)\}"""),          // "...pkg/.Activity t42}"
         Regex("""taskid[=:]\s*(\d+)"""), // "taskId=42" / "TaskId: 42"
         Regex("""task\s*#(\d+)""")       // "Task #42"
     )
