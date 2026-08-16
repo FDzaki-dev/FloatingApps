@@ -50,6 +50,11 @@
     <string name="closed_success">%1$s ditutup</string>
     <string name="closed_failed">Gagal menutup %1$s</string>
     <string name="favorites_long_press_hint">Favorit yang sedang floating: tekan singkat untuk ke depan, tekan &amp; tahan untuk tutup</string>
+    <string name="readiness_ready">✅ Siap — semua izin lengkap, floating akan bekerja normal</string>
+    <string name="readiness_degraded">⚠️ Berjalan, tapi baterai belum full-exempt — OS bisa mematikan bubble sewaktu-waktu di background. Lihat Langkah 3.</string>
+    <string name="readiness_action_required">🔧 Izin belum lengkap — selesaikan langkah di bawah sebelum mencoba floating</string>
+    <string name="readiness_unsupported">🚫 Device ini kemungkinan TIDAK mendukung mode floating (freeform) — tetap bisa dicoba, tapi jangan berharap window benar-benar interaktif</string>
+    <string name="readiness_error">❗ Gagal memeriksa status kesiapan — coba tutup &amp; buka lagi app ini. Kalau berulang, cek crash log di Documents/FloatingApps/logs</string>
 
     <string name="notif_channel_name">Floating Bubble</string>
     <string name="notif_channel_desc">Notifikasi latar belakang untuk layanan floating bubble</string>

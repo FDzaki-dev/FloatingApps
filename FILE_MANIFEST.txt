@@ -1,12 +1,12 @@
-FLOATING APPS — FILE MANIFEST (v2_Batch7-Hotfix1 / Crash Fix: TaskIdParser regex)
-Total: 60 file (v2_Batch7-Hotfix1: 3 file diubah, tidak ada file baru/dihapus)
+FLOATING APPS — FILE MANIFEST (v2_Batch8 / Unified Readiness Banner)
+Total: 60 file (v2_Batch8: 5 file diubah, tidak ada file baru/dihapus)
 
 [PROTECTED - Edit Parsial Only]
 AndroidManifest.xml              app/src/main/AndroidManifest.xml (+REQUEST_IGNORE_BATTERY_OPTIMIZATIONS v2_Batch5)
 build.gradle (root)              build.gradle
-build.gradle (module)            app/build.gradle (versionCode 7/2.4.1 v2_Batch7-Hotfix1, no new deps)
+build.gradle (module)            app/build.gradle (versionCode 8/2.5.0 v2_Batch8, no new deps)
 settings.gradle                  settings.gradle
-MainActivity.kt                  app/src/main/java/com/floatingapps/app/MainActivity.kt (parsial v2_Batch7: BringingToFront outcome + closeFloatingFavorite via long-press)
+MainActivity.kt                  app/src/main/java/com/floatingapps/app/MainActivity.kt (parsial v2_Batch7: BringingToFront outcome + closeFloatingFavorite via long-press; parsial v2_Batch8: observeCapabilityState + tvReadinessBanner)
 App.kt (Application)             app/src/main/java/com/floatingapps/app/App.kt (parsial v2_Batch7: FloatingSessionManager.init())
 .gitignore                       .gitignore
 .gitattributes                   .gitattributes
@@ -32,7 +32,7 @@ LaunchVerification.kt            app/src/main/java/com/floatingapps/app/core/ses
 FloatingLaunchCoordinator.kt     app/src/main/java/com/floatingapps/app/core/session/FloatingLaunchCoordinator.kt (parsial v2_Batch7: raise-vs-relaunch routing, +BringingToFront outcome)
 SessionPersistence.kt            app/src/main/java/com/floatingapps/app/core/session/SessionPersistence.kt (NEW v2_Batch7 — disk-backed session history, FIFO cap 20)
 SystemReadiness.kt               app/src/main/java/com/floatingapps/app/core/capability/SystemReadiness.kt
-CapabilityManager.kt             app/src/main/java/com/floatingapps/app/core/capability/CapabilityManager.kt
+CapabilityManager.kt             app/src/main/java/com/floatingapps/app/core/capability/CapabilityManager.kt (parsial v2_Batch8: refresh() try-catch hardening -> real ERROR state; recordEmpiricalResult live-republish)
 
 [CORE LOGIC — Window Control (NEW v2_Batch7)]
 TaskIdParser.kt                  app/src/main/java/com/floatingapps/app/core/window/TaskIdParser.kt (HOTFIX v2_Batch7-Hotfix1: escaped unescaped brace regex crash)
@@ -50,13 +50,13 @@ BubbleStateBus.kt                app/src/main/java/com/floatingapps/app/core/ipc
 [RESOURCES - Editable]
 proguard-rules.pro               app/proguard-rules.pro
 gradle.properties                gradle.properties
-activity_main.xml                app/src/main/res/layout/activity_main.xml (NestedScrollView fix v2_Batch5)
+activity_main.xml                app/src/main/res/layout/activity_main.xml (NestedScrollView fix v2_Batch5; +tvReadinessBanner v2_Batch8)
 layout_bubble.xml                app/src/main/res/layout/layout_bubble.xml
 layout_bubble_expanded.xml       app/src/main/res/layout/layout_bubble_expanded.xml
 layout_app_list_item.xml         app/src/main/res/layout/layout_app_list_item.xml
 layout_favorite_slot.xml         app/src/main/res/layout/layout_favorite_slot.xml
-strings.xml                      app/src/main/res/values/strings.xml (+step3/battery strings v2_Batch5; +launch_not_floating_warning/freeform_unsupported_warning v2_Batch6; +bringing_to_front/closed_success/closed_failed/favorites_long_press_hint v2_Batch7)
-colors.xml                       app/src/main/res/values/colors.xml
+strings.xml                      app/src/main/res/values/strings.xml (+step3/battery strings v2_Batch5; +launch_not_floating_warning/freeform_unsupported_warning v2_Batch6; +bringing_to_front/closed_success/closed_failed/favorites_long_press_hint v2_Batch7; +readiness_ready/degraded/action_required/unsupported/error v2_Batch8)
+colors.xml                       app/src/main/res/values/colors.xml (+5 warna readiness_* v2_Batch8)
 themes.xml                       app/src/main/res/values/themes.xml
 bubble_background.xml            app/src/main/res/drawable/bubble_background.xml
 panel_background.xml             app/src/main/res/drawable/panel_background.xml
@@ -70,9 +70,9 @@ backup_rules.xml                 app/src/main/res/xml/backup_rules.xml
 data_extraction_rules.xml        app/src/main/res/xml/data_extraction_rules.xml
 
 [DOCS — info terbaru selalu di paling atas tiap file]
-README.md                        README.md (Status Terkini di atas v2_Batch7)
+README.md                        README.md (Status Terkini di atas v2_Batch8)
 CHANGELOG.md                     CHANGELOG.md (newest-first, tetap)
-PROJECT_STATE.md                 PROJECT_STATE.md (STATUS TERKINI v2_Batch7 + Known-Fix Log + Arsip Detail v2_Batch6/v2_Batch5)
+PROJECT_STATE.md                 PROJECT_STATE.md (STATUS TERKINI v2_Batch8 + Known-Fix Log + Arsip Detail v2_Batch7/v2_Batch6/v2_Batch5)
 FILE_MANIFEST.txt                FILE_MANIFEST.txt (file ini)
 
 [SENGAJA TIDAK ADA]

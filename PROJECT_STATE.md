@@ -3,8 +3,67 @@
 > bawah — sisipkan di atas "Known-Fix Log" section, entri lama tetap ada
 > di bawahnya untuk histori.
 
-## 🟢 STATUS TERKINI — v2.4.1 / Batch7-Hotfix1 (2026-08-17)
-**Confidence Rating: 97%**
+## 🟢 STATUS TERKINI — v2.5.0 / Batch8 (2026-08-17)
+**Confidence Rating: 93%**
+
+Batch reguler (5 file, di bawah limit 10 — BUKAN Atomic Change) yang
+menjawab **"Urutan Kerja yang Benar" langkah 5** di
+`FloatingApps_v2_2_0_Final_Gap_Audit.md`: **Failure/Recovery UX**, plus
+menutup **P1 #14** "Unified setup/readiness state untuk Overlay + Shizuku +
+Battery + Freeform". State-nya sendiri (`SystemReadiness`,
+`CapabilitySnapshot`) sudah dibangun di Batch6 lewat `CapabilityManager` —
+batch ini akhirnya MENAMPILKANNYA ke user secara terpadu, bukan cuma
+dipakai internal untuk gating tombol.
+
+### Ringkasan perubahan
+1. **`activity_main.xml`**: 1 banner baru (`tvReadinessBanner`) di antara
+   deskripsi app dan panel Step 1 — satu tempat glanceable untuk status
+   keseluruhan, gantikan pola lama di mana `UNSUPPORTED` cuma muncul lewat
+   toast SAAT user mencoba launch, dan `DEGRADED`/`ERROR` sama sekali tidak
+   punya representasi visual sendiri.
+2. **`colors.xml`**: 5 warna semantik baru (`readiness_ready/degraded/
+   action_required/unsupported/error`).
+3. **`strings.xml`**: 5 string pesan banner, satu per `SystemReadiness`.
+4. **`MainActivity.kt`** (parsial, PROTECTED): `observeCapabilityState()`
+   baru — collect `CapabilityManager.snapshot` (StateFlow) lewat
+   `repeatOnLifecycle(STARTED)`, pola sama seperti
+   `observeBubbleState()`/`observeSessionState()` yang sudah ada. Banner
+   update text+warna reaktif, TERMASUK saat state berubah di tengah sesi
+   (lihat poin 5), bukan cuma saat `onResume()`.
+5. **`CapabilityManager.kt`** (parsial) — 2 perbaikan:
+   - `refresh()` sekarang dibungkus try-catch. Sebelumnya kalau salah satu
+     probe (paling mungkin `ShizukuShellManager.isReady()` kalau koneksi
+     Binder mati di tengah cek) throw exception tak terduga, itu akan
+     merambat ke `MainActivity.onResume()`/`refreshUi()` TANPA proteksi —
+     risiko crash sekelas yang baru saja di-hotfix di v2.4.1. Sekarang
+     exception apa pun → `SystemReadiness.ERROR`, yang sebelumnya adalah
+     enum value valid tapi TIDAK PERNAH benar-benar tercapai di kode
+     (dead state) — sekarang punya arti nyata.
+   - `recordEmpiricalResult()` sekarang ikut mem-publish ulang `snapshot`
+     (dihitung dari field snapshot yang sudah ada, tidak perlu Context
+     baru) — sebelumnya hasil verifikasi freeform pertama HANYA tersimpan
+     di variabel privat dan baru terlihat di banner pada `refresh()`
+     berikutnya (mis. `onResume()` selanjutnya). Sekarang user yang
+     menonton banner saat percobaan launch pertama langsung lihat
+     perubahannya.
+6. **`app/build.gradle`** (PROTECTED, parsial): `versionCode 8` /
+   `versionName "2.5.0"`. Tidak ada dependency baru.
+
+### Sengaja TIDAK dikerjakan batch ini
+- Banner ini HANYA di `MainActivity` (layar setup/beranda) — panel bubble
+  di `FloatingBubbleService` sengaja TIDAK diberi banner yang sama, karena
+  itu bukan layar setup, itu quick-picker; parity-antara-entry-point yang
+  jadi aturan Batch5/6/7 berlaku untuk aksi launch/window, bukan untuk UI
+  onboarding yang memang cuma ada di satu tempat.
+- `PossibleDuplicate` (bring-to-front) dan sesi `RESTORED` (Batch7) masih
+  belum punya representasi visual sendiri — masih utang P1, sengaja tidak
+  digabung supaya batch ini tetap fokus 1 hal (readiness banner).
+- P1 #9–13, #15, #16 dan semua P2 — belum disentuh, menyusul langkah 6
+  audit ("baru polishing UI/UX") setelah Window/Task State Layer (P0 #3
+  sisa) benar-benar tuntas.
+
+### Arsip Detail — v2_Batch7 (2026-08-16, hotfix 2026-08-17)
+**Confidence Rating: 94% (97% setelah hotfix v2.4.1)**
 
 ### 🔴 Hotfix v2.4.1 — Crash saat launch (dari crash log user, `dd2b3cf4`)
 **Dianalisa dari file crash log bawaan app (Crash Logger), sesuai Debug
@@ -251,6 +310,9 @@ registry, satu tidak).
   "Unified setup/readiness state" batch berikutnya.
 
 ## Known-Fix Log (terbaru di atas)
+- **v2_Batch8** (2026-08-17): Unified readiness banner (`MainActivity` +
+  `CapabilityManager` hardening + live-reactive snapshot) — jawab audit
+  langkah 5 "Failure/Recovery UX" + P1 #14 — lihat "STATUS TERKINI" di atas.
 - **v2_Batch7_Hotfix1** (2026-08-17): Crash total saat launch —
   `PatternSyntaxException` (regex `}` tanpa escape, ICU Android 16 strict)
   di `TaskIdParser.kt`, ditemukan dari crash log user (`dd2b3cf4`). Fix +
@@ -447,7 +509,14 @@ pairing Wireless debugging sekali di awal.
   sebenarnya tanpa cek shell baru. Jangan treat `RESTORED` sebagai
   `VERIFIED_FLOATING`.
 
-## Protected Assets Checklist (batch v2_Batch7)
+## Protected Assets Checklist (batch v2_Batch8)
+- [x] app/build.gradle — version bump saja (8/2.5.0), 0 dependency baru (parsial)
+- [x] MainActivity.kt — parsial (observeCapabilityState baru + binding
+      tvReadinessBanner; sisa struktur tidak diubah)
+- [x] AndroidManifest.xml — TIDAK diubah
+- [x] App.kt, settings.gradle, .gitignore, .gitattributes, release.yml — tidak diubah
+
+### Protected Assets Checklist (batch v2_Batch7, histori)
 - [x] app/build.gradle — version bump saja, 0 dependency baru (parsial)
 - [x] App.kt — parsial (1 baris: `FloatingSessionManager.init()`)
 - [x] MainActivity.kt — parsial (launchFloating outcome baru +

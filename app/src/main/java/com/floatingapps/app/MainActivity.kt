@@ -44,6 +44,7 @@ class MainActivity : AppCompatActivity(), Shizuku.OnRequestPermissionResultListe
     private lateinit var btnShizukuAction: Button
     private lateinit var tvBatteryStatus: TextView
     private lateinit var btnBatteryAction: Button
+    private lateinit var tvReadinessBanner: TextView
     private lateinit var btnToggleBubble: Button
     private lateinit var etSearch: EditText
     private lateinit var rvApps: RecyclerView
@@ -79,6 +80,7 @@ class MainActivity : AppCompatActivity(), Shizuku.OnRequestPermissionResultListe
         btnShizukuAction = findViewById(R.id.btnShizukuAction)
         tvBatteryStatus = findViewById(R.id.tvBatteryStatus)
         btnBatteryAction = findViewById(R.id.btnBatteryAction)
+        tvReadinessBanner = findViewById(R.id.tvReadinessBanner)
         btnToggleBubble = findViewById(R.id.btnToggleBubble)
         etSearch = findViewById(R.id.etSearch)
         rvApps = findViewById(R.id.rvApps)
@@ -121,6 +123,7 @@ class MainActivity : AppCompatActivity(), Shizuku.OnRequestPermissionResultListe
         bindFavorites()
         observeBubbleState()
         observeSessionState()
+        observeCapabilityState()
     }
 
     override fun onDestroy() {
@@ -176,6 +179,34 @@ class MainActivity : AppCompatActivity(), Shizuku.OnRequestPermissionResultListe
                                 ).show()
                             }
                         }
+                }
+            }
+        }
+    }
+
+    /**
+     * P0 roadmap step 5, "Failure/Recovery UX": before this, readiness info
+     * was scattered across 3 separate step panels plus a UNSUPPORTED toast
+     * that only fired at launch-attempt time - there was no single place to
+     * see overall status. This collects CapabilityManager's StateFlow
+     * directly (reacts live, including mid-session flips from
+     * recordEmpiricalResult - not just on refresh()/onResume) and reflects
+     * it as one glanceable banner, closing P1 #14's "Unified setup/
+     * readiness state" gap.
+     */
+    private fun observeCapabilityState() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                CapabilityManager.snapshot.collect { snapshot ->
+                    val (text, color) = when (snapshot.readiness) {
+                        SystemReadiness.READY -> R.string.readiness_ready to R.color.readiness_ready
+                        SystemReadiness.DEGRADED -> R.string.readiness_degraded to R.color.readiness_degraded
+                        SystemReadiness.ACTION_REQUIRED -> R.string.readiness_action_required to R.color.readiness_action_required
+                        SystemReadiness.UNSUPPORTED -> R.string.readiness_unsupported to R.color.readiness_unsupported
+                        SystemReadiness.ERROR -> R.string.readiness_error to R.color.readiness_error
+                    }
+                    tvReadinessBanner.text = getString(text)
+                    tvReadinessBanner.setBackgroundColor(getColor(color))
                 }
             }
         }

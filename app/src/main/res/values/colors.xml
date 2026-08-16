@@ -6,4 +6,9 @@
     <color name="text_primary">#F8FAFC</color>
     <color name="text_secondary">#94A3B8</color>
     <color name="panel_input_bg">#334155</color>
+    <color name="readiness_ready">#16A34A</color>
+    <color name="readiness_degraded">#F59E0B</color>
+    <color name="readiness_action_required">#2563EB</color>
+    <color name="readiness_unsupported">#DC2626</color>
+    <color name="readiness_error">#7F1D1D</color>
 </resources>

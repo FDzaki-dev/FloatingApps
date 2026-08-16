@@ -1,6 +1,30 @@
 # CHANGELOG
 > Terbaru selalu di paling atas.
 
+## [2.5.0] — v2_Batch8 — Unified Readiness Banner (Failure/Recovery UX)
+Batch reguler (5 file, bukan Atomic) — jawab "Urutan Kerja" langkah 5 audit
++ P1 #14. Menampilkan state `CapabilityManager` (dibangun Batch6) yang
+sebelumnya cuma dipakai internal, jadi 1 banner terpadu di beranda.
+
+### Added
+- Banner readiness (`tvReadinessBanner`) di `activity_main.xml` — pesan +
+  warna beda per `SystemReadiness` (READY/DEGRADED/ACTION_REQUIRED/
+  UNSUPPORTED/ERROR).
+- `MainActivity.observeCapabilityState()` — collect reaktif dari
+  `CapabilityManager.snapshot`.
+
+### Fixed
+- `CapabilityManager.refresh()` sekarang dibungkus try-catch — sebelumnya
+  exception tak terduga dari salah satu probe (mis. Shizuku Binder mati)
+  bisa merambat tak tertangkap ke `MainActivity`. `ERROR` (enum yang
+  sebelumnya dead/tidak pernah tercapai) sekarang jadi hasil nyata.
+- `recordEmpiricalResult()` sekarang republish `snapshot` langsung —
+  sebelumnya hasil verifikasi freeform baru terlihat di UI pada
+  `refresh()` berikutnya, bukan real-time.
+
+### Changed
+- `versionCode 8` / `versionName "2.5.0"`. Tidak ada dependency baru.
+
 ## [2.4.1] — v2_Batch7-Hotfix1 — Crash Fix (Launch Verification)
 Ditemukan dari crash log bawaan app (Crash Logger), dianalisa tanpa perlu
 Logcat/ADB.

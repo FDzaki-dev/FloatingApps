@@ -1,17 +1,22 @@
 # Floating Apps
 
-## 🟢 Status Terkini — v2.4.0 (2026-08-16)
-- **Terbaru:** Favorit yang sudah floating sekarang punya bring-to-front
-  yang BENAR — tap ulang mengangkat window yang sama (diverifikasi, bukan
-  ditebak), bukan relaunch buta seperti sebelumnya.
-- **Terbaru:** tekan & tahan Favorit yang sedang floating untuk menutupnya.
-- **Terbaru:** riwayat sesi bertahan lintas restart app (belum termasuk
-  posisi/ukuran window — lihat `PROJECT_STATE.md` untuk kenapa).
+## 🟢 Status Terkini — v2.5.0 (2026-08-17)
+- **Terbaru:** satu banner status terpadu di beranda — langsung kelihatan
+  kalau semua siap, baterai belum full-exempt, izin belum lengkap, device
+  kemungkinan tidak mendukung floating, atau ada error — tanpa harus coba
+  launch dulu buat tahu.
+- **Terbaru:** hotfix crash v2.4.1 (regex `TaskIdParser`) — lihat
+  `PROJECT_STATE.md` untuk detail root cause.
 - Detail lengkap & alasan desain: lihat `PROJECT_STATE.md` (paling atas =
   paling baru). Item besar berikutnya (resize/reposition/maximize window
   internal) menyusul di batch berikutnya — lihat
   `FloatingApps_v2_2_0_Final_Gap_Audit.md`.
 - Rilis APK terbaru: lihat tab **Releases** di sidebar repo ini.
+
+## Status Sebelumnya — v2.4.0
+- Favorit yang sudah floating punya bring-to-front yang benar (diverifikasi,
+  bukan ditebak), bisa ditutup lewat tekan-tahan, dan riwayat sesi bertahan
+  lintas restart app.
 
 ## Status Sebelumnya — v2.3.0
 - Launch punya registry & verifikasi nyata — app tidak lagi dianggap

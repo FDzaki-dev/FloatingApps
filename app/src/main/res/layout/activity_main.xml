@@ -36,6 +36,28 @@
         android:textColor="@color/text_secondary"
         android:textSize="13sp" />
 
+    <!--
+      Unified readiness banner (P0 roadmap step 5, "Failure/Recovery UX"):
+      single glanceable summary of CapabilityManager's SystemReadiness,
+      replacing the old pattern where the only way to learn about e.g.
+      UNSUPPORTED freeform was a toast at the moment you tried to launch.
+      Driven reactively by MainActivity.observeCapabilityState() - text/
+      background swap based on state, no separate visibility toggle needed
+      since every state (including READY) has a message.
+    -->
+    <TextView
+        android:id="@+id/tvReadinessBanner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="12dp"
+        android:padding="10dp"
+        android:textColor="@color/text_primary"
+        android:textSize="12sp"
+        android:gravity="center"
+        tools:text="✅ Siap — semua izin lengkap" />
+
     <!-- Step 1: Overlay permission -->
     <LinearLayout
         android:layout_width="match_parent"

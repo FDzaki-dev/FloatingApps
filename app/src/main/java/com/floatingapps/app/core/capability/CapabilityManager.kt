@@ -33,20 +33,36 @@ object CapabilityManager {
 
     private var empiricalFreeform: Boolean? = null
 
+    /**
+     * Wrapped defensively (v2_Batch8, same lesson as the v2.4.1 crash
+     * hotfix on `TaskIdParser`): an unexpected exception from any of the
+     * individual probes here - most plausibly `ShizukuShellManager.isReady()`
+     * if the Binder connection dies mid-check - must never crash the
+     * caller (MainActivity.onResume/refreshUi). It now surfaces as
+     * [SystemReadiness.ERROR], which was previously a defined-but-
+     * unreachable enum value; this is what makes it real.
+     */
     fun refresh(context: Context) {
-        val overlay = OverlayPermissionHelper.isGranted(context)
-        val shizuku = ShizukuShellManager.isReady()
-        val battery = BatteryOptimizationHelper.isIgnoringOptimizations(context)
-        val freeform = empiricalFreeform ?: staticFreeformSignal(context)
+        try {
+            val overlay = OverlayPermissionHelper.isGranted(context)
+            val shizuku = ShizukuShellManager.isReady()
+            val battery = BatteryOptimizationHelper.isIgnoringOptimizations(context)
+            val freeform = empiricalFreeform ?: staticFreeformSignal(context)
 
-        val readiness = when {
+            _snapshot.value = CapabilitySnapshot(readinessFor(overlay, shizuku, battery, freeform), overlay, shizuku, battery, freeform)
+        } catch (e: Exception) {
+            val prev = _snapshot.value
+            _snapshot.value = prev.copy(readiness = SystemReadiness.ERROR)
+        }
+    }
+
+    private fun readinessFor(overlay: Boolean, shizuku: Boolean, battery: Boolean, freeform: Boolean?): SystemReadiness =
+        when {
             !overlay || !shizuku -> SystemReadiness.ACTION_REQUIRED
             freeform == false -> SystemReadiness.UNSUPPORTED
             !battery -> SystemReadiness.DEGRADED
             else -> SystemReadiness.READY
         }
-        _snapshot.value = CapabilitySnapshot(readiness, overlay, shizuku, battery, freeform)
-    }
 
     /**
      * Called with a real, observed launch-verification outcome. One
@@ -54,6 +70,14 @@ object CapabilityManager {
      * always wins and sticks). A single failure is weaker evidence - it
      * could be one misbehaving app, not a platform limitation - so it only
      * downgrades to `false` once we have never seen a success.
+     *
+     * v2_Batch8: now also republishes [snapshot] immediately using the
+     * CURRENT snapshot's other fields (no Context needed) - previously
+     * this only updated a private var, so the readiness banner wouldn't
+     * reflect a fresh UNSUPPORTED/READY verdict until the next explicit
+     * [refresh] call (e.g. next onResume). A user watching the banner
+     * during their very first launch attempt deserves to see it update
+     * live, not on their next app-switch.
      */
     fun recordEmpiricalResult(success: Boolean) {
         empiricalFreeform = when {
@@ -61,6 +85,11 @@ object CapabilityManager {
             empiricalFreeform == true -> true
             else -> false
         }
+        val prev = _snapshot.value
+        _snapshot.value = prev.copy(
+            readiness = readinessFor(prev.overlayGranted, prev.shizukuReady, prev.batteryExempt, empiricalFreeform),
+            freeformSupported = empiricalFreeform
+        )
     }
 
     private fun staticFreeformSignal(context: Context): Boolean? {
