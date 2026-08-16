@@ -87,6 +87,13 @@ object ShizukuShellManager {
         return exec(arrayOf("am", "start", "--windowingMode", "5", "-n", component))
     }
 
+    /** Raw dumpsys text for [packageName]'s activity/task state - used by
+     *  core.session.LaunchVerification as a best-effort signal of whether a
+     *  launch actually became a freeform window. Never throws; callers
+     *  treat an error string like any other inconclusive result. */
+    fun dumpActivityState(packageName: String): String =
+        exec(arrayOf("dumpsys", "activity", "activities", packageName))
+
     private fun exec(cmd: Array<String>): String {
         return try {
             service?.execArr(cmd) ?: "Shizuku belum siap"

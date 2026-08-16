@@ -1,12 +1,12 @@
-FLOATING APPS — FILE MANIFEST (v2_Batch5 / Scroll Fix + APK Naming + Docs Reorder + Modular Anti-Crash Architecture)
-Total: 51 file
+FLOATING APPS — FILE MANIFEST (v2_Batch6 / Session Registry + Capability Detection + Launch Verification)
+Total: 57 file
 
 [PROTECTED - Edit Parsial Only]
 AndroidManifest.xml              app/src/main/AndroidManifest.xml (+REQUEST_IGNORE_BATTERY_OPTIMIZATIONS v2_Batch5)
 build.gradle (root)              build.gradle
-build.gradle (module)            app/build.gradle (+2 deps, versionCode 4/2.2.0 v2_Batch5)
+build.gradle (module)            app/build.gradle (versionCode 5/2.3.0 v2_Batch6, no new deps)
 settings.gradle                  settings.gradle
-MainActivity.kt                  app/src/main/java/com/floatingapps/app/MainActivity.kt (rewrite v2_Batch5)
+MainActivity.kt                  app/src/main/java/com/floatingapps/app/MainActivity.kt (parsial v2_Batch6: launchFloating via coordinator + capability/session observers)
 App.kt (Application)             app/src/main/java/com/floatingapps/app/App.kt
 .gitignore                       .gitignore
 .gitattributes                   .gitattributes
@@ -15,14 +15,23 @@ release.yml (workflow)           .github/workflows/release.yml (APK naming fix v
 [CORE LOGIC — Shizuku / Freeform launcher]
 IShellService.aidl               app/src/main/aidl/com/floatingapps/app/IShellService.aidl
 ShellUserService.kt              app/src/main/java/com/floatingapps/app/ShellUserService.kt
-ShizukuShellManager.kt           app/src/main/java/com/floatingapps/app/ShizukuShellManager.kt
-FloatingBubbleService.kt         app/src/main/java/com/floatingapps/app/FloatingBubbleService.kt (rewrite v2_Batch5)
+ShizukuShellManager.kt           app/src/main/java/com/floatingapps/app/ShizukuShellManager.kt (+dumpActivityState v2_Batch6)
+FloatingBubbleService.kt         app/src/main/java/com/floatingapps/app/FloatingBubbleService.kt (parsial v2_Batch6: launchFloating via coordinator)
 CrashHandler.kt                  app/src/main/java/com/floatingapps/app/CrashHandler.kt
 FloatableApp.kt                  app/src/main/java/com/floatingapps/app/FloatableApp.kt
 AppListLoader.kt                 app/src/main/java/com/floatingapps/app/AppListLoader.kt
 AppListAdapter.kt                app/src/main/java/com/floatingapps/app/AppListAdapter.kt
 FavoritesManager.kt              app/src/main/java/com/floatingapps/app/FavoritesManager.kt
 FavoritesRowBinder.kt            app/src/main/java/com/floatingapps/app/FavoritesRowBinder.kt
+
+[CORE LOGIC — Session Registry + Capability Detection (NEW v2_Batch6)]
+FloatingSessionState.kt          app/src/main/java/com/floatingapps/app/core/session/FloatingSessionState.kt
+FloatingSession.kt               app/src/main/java/com/floatingapps/app/core/session/FloatingSession.kt
+FloatingSessionManager.kt        app/src/main/java/com/floatingapps/app/core/session/FloatingSessionManager.kt
+LaunchVerification.kt            app/src/main/java/com/floatingapps/app/core/session/LaunchVerification.kt
+FloatingLaunchCoordinator.kt     app/src/main/java/com/floatingapps/app/core/session/FloatingLaunchCoordinator.kt
+SystemReadiness.kt               app/src/main/java/com/floatingapps/app/core/capability/SystemReadiness.kt
+CapabilityManager.kt             app/src/main/java/com/floatingapps/app/core/capability/CapabilityManager.kt
 
 [CORE LOGIC — Modular Bubble Architecture (NEW v2_Batch5)]
 OverlayPermissionHelper.kt       app/src/main/java/com/floatingapps/app/core/overlay/OverlayPermissionHelper.kt
@@ -41,7 +50,7 @@ layout_bubble.xml                app/src/main/res/layout/layout_bubble.xml
 layout_bubble_expanded.xml       app/src/main/res/layout/layout_bubble_expanded.xml
 layout_app_list_item.xml         app/src/main/res/layout/layout_app_list_item.xml
 layout_favorite_slot.xml         app/src/main/res/layout/layout_favorite_slot.xml
-strings.xml                      app/src/main/res/values/strings.xml (+step3/battery strings v2_Batch5)
+strings.xml                      app/src/main/res/values/strings.xml (+step3/battery strings v2_Batch5; +launch_not_floating_warning/freeform_unsupported_warning v2_Batch6)
 colors.xml                       app/src/main/res/values/colors.xml
 themes.xml                       app/src/main/res/values/themes.xml
 bubble_background.xml            app/src/main/res/drawable/bubble_background.xml
@@ -56,9 +65,9 @@ backup_rules.xml                 app/src/main/res/xml/backup_rules.xml
 data_extraction_rules.xml        app/src/main/res/xml/data_extraction_rules.xml
 
 [DOCS — info terbaru selalu di paling atas tiap file]
-README.md                        README.md (Status Terkini di atas v2_Batch5)
+README.md                        README.md (Status Terkini di atas v2_Batch6)
 CHANGELOG.md                     CHANGELOG.md (newest-first, tetap)
-PROJECT_STATE.md                 PROJECT_STATE.md (dirombak latest-on-top v2_Batch5)
+PROJECT_STATE.md                 PROJECT_STATE.md (STATUS TERKINI v2_Batch6 + Known-Fix Log dirapikan jadi 1 section)
 FILE_MANIFEST.txt                FILE_MANIFEST.txt (file ini)
 
 [SENGAJA TIDAK ADA]
@@ -73,3 +82,7 @@ release.keystore                 -> di-generate sendiri oleh user
   OverlayWindowController (v2_Batch5) — tidak boleh dipanggil langsung lagi.
 - StateFlow collect dari Activity WAJIB lewat
   lifecycleScope.launch { repeatOnLifecycle(STARTED) { ... } } (v2_Batch5).
+- Semua launch floating (dari MainActivity ATAU FloatingBubbleService) WAJIB
+  lewat FloatingLaunchCoordinator.launch() — TIDAK BOLEH panggil
+  ShizukuShellManager.launchFloating() langsung lagi, supaya session
+  registry & verification selalu konsisten di kedua entry point (v2_Batch6).

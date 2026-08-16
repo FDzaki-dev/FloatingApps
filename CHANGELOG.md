@@ -1,6 +1,44 @@
 # CHANGELOG
 > Terbaru selalu di paling atas.
 
+## [2.3.0] — v2_Batch6 — Session Registry, Capability Detection, Launch Verification
+Atomic Change (16 file) menjawab P0 #1, #2, #5, #6, #8 dari
+`FloatingApps_v2_2_0_Final_Gap_Audit.md`, mengikuti urutan kerja yang
+direkomendasikan audit (Session Manager → Capability Manager → Launch
+Verification). **Bukan** rewrite total; P0 #3/#4/#7 dan semua P1/P2
+sengaja belum dikerjakan — detail lengkap di `PROJECT_STATE.md`.
+
+### Added
+- `core/session/`: `FloatingSessionManager` (registry in-memory,
+  `StateFlow<Map<String, FloatingSession>>`), `FloatingSessionState` (enum
+  `LAUNCHING/VERIFIED_FLOATING/FAILED_NOT_FLOATING/FAILED_LAUNCH/CLOSED`),
+  `LaunchVerification` (poll `dumpsys activity activities` best-effort
+  untuk konfirmasi windowingMode freeform), `FloatingLaunchCoordinator`
+  (satu pintu masuk launch, dipakai MainActivity & FloatingBubbleService).
+- `core/capability/`: `CapabilityManager` + `SystemReadiness` (enum
+  `READY/DEGRADED/ACTION_REQUIRED/UNSUPPORTED/ERROR`) — gabungkan Overlay +
+  Shizuku + Battery + deteksi Freeform (statis via
+  `FEATURE_FREEFORM_WINDOW_MANAGEMENT` + empiris dari hasil
+  LaunchVerification nyata) jadi satu snapshot readiness.
+- `ShizukuShellManager.dumpActivityState()` — wrapper dumpsys untuk probe
+  verifikasi.
+- String baru: `launch_not_floating_warning`, `freeform_unsupported_warning`.
+
+### Fixed
+- Sebelumnya "command shell tidak error" dianggap = "berhasil floating".
+  Sekarang ada pembeda eksplisit lewat verifikasi async — user diberi tahu
+  (toast, sekali per session) kalau app terbuka tapi TIDAK dalam mode
+  floating.
+- Duplikasi logic launch antara MainActivity & FloatingBubbleService
+  (dua copy hampir identik) disatukan lewat `FloatingLaunchCoordinator`.
+
+### Changed
+- `versionCode 5` / `versionName "2.3.0"`. Tidak ada dependency baru.
+
+Detail desain, alasan tiap keputusan, dan daftar item yang SENGAJA belum
+dikerjakan: lihat `PROJECT_STATE.md` bagian "STATUS TERKINI — v2.3.0 /
+Batch6" (paling atas file itu).
+
 ## [2.2.0] — v2_Batch5 — Scroll Fix, APK Naming, Docs Reorder, Modular Anti-Crash Architecture
 ### Fixed
 - **Beranda tidak bisa di-scroll ke bawah**: root layout `activity_main.xml`

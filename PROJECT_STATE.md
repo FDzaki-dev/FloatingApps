@@ -3,7 +3,124 @@
 > bawah — sisipkan di atas "Known-Fix Log" section, entri lama tetap ada
 > di bawahnya untuk histori.
 
-## 🟢 STATUS TERKINI — v2.2.0 / Batch5 (2026-08-16)
+## 🟢 STATUS TERKINI — v2.3.0 / Batch6 (2026-08-16)
+**Confidence Rating: 95%**
+
+Batch ini adalah **Atomic Change** (16 file > limit 10 — lihat alasan di
+bawah) yang menjawab **P0 #1, #2, #5, #6, #8** dari
+`FloatingApps_v2_2_0_Final_Gap_Audit.md`, mengikuti persis "Urutan Kerja
+yang Benar" di audit tsb (langkah 1–3: Session Manager → Capability Manager
+→ Launch Verification), **BUKAN** rewrite total dan **BUKAN** mengerjakan
+seluruh P0 sekaligus — item #3 (True Window Management), #4 (True
+Bring-to-Front), dan #7 (Persistent Floating State penuh) **sengaja belum**
+dikerjakan di batch ini, menyusul di batch berikutnya. Fondasi lama
+(`OverlayWindowController`, `FloatingDragTouchListener`, dll — lihat daftar
+"Fondasi yang Sudah Cukup Baik" di audit) tidak disentuh sama sekali.
+
+**Kenapa Atomic (bukan dipecah)**: `FloatingSessionManager`,
+`CapabilityManager`, dan `LaunchVerification` saling bergantung erat —
+verification menulis ke session manager DAN membaca capability manager;
+`MainActivity` dan `FloatingBubbleService` sama-sama entry point launch yang
+harus di-update BERSAMAAN lewat `FloatingLaunchCoordinator` baru, kalau
+tidak akan ada 2 alur launch yang tidak konsisten (satu tercatat di
+registry, satu tidak).
+
+### Ringkasan perubahan
+1. **`core/session/` (baru)** — jawaban P0 #1 "Floating Session Registry"
+   + P0 #8 "Launched vs Actually Floating":
+   - `FloatingSessionState.kt` — enum eksplisit: `LAUNCHING`,
+     `VERIFIED_FLOATING`, `FAILED_NOT_FLOATING`, `FAILED_LAUNCH`, `CLOSED`.
+     Ini jawaban P0 #6 "Failure & Recovery State" versi session-level
+     (state readiness-level ada di `CapabilityManager`, lihat poin 2).
+   - `FloatingSession.kt` — data model 1 entri registry.
+   - `FloatingSessionManager.kt` — `StateFlow<Map<String, FloatingSession>>`
+     singleton in-memory (scope: proses, BUKAN disk — full persistence
+     posisi/ukuran/session lintas-restart adalah P0 #7 terpisah, sengaja
+     tidak dicampur di batch ini). Juga berisi extension
+     `FloatableApp.sessionKey`.
+   - `FloatingLaunchCoordinator.kt` — SATU pintu masuk launch, dipakai
+     `MainActivity` & `FloatingBubbleService` (dulu 2 copy logic hampir
+     identik, sekarang 1). Mengembalikan `LaunchOutcome` (command-level)
+     + memicu `LaunchVerification` async untuk hasil sebenarnya.
+   - `LaunchVerification.kt` — jawaban P0 #2 "Launch Result Verification".
+     Poll `dumpsys activity activities <pkg>` (via `ShizukuShellManager`,
+     shell UID) hingga 5x/400ms, cari token `windowingmode=freeform`/`=5`
+     vs `fullscreen`/`=1`. **KETERBATASAN JUJUR (didokumentasikan di kode,
+     bukan disembunyikan)**: format teks `dumpsys` bukan API stabil lintas
+     OEM — ini heuristik best-effort, BUKAN oracle 100% pasti, sama seperti
+     `BatteryOptimizationHelper` untuk OEM autostart. Tetap merupakan
+     peningkatan nyata dari v2.2.0 yang menganggap "command tidak error" =
+     "berhasil floating".
+2. **`core/capability/` (baru)** — jawaban P0 #5 "Freeform Capability
+   Detection" + separuh P0 #6 (readiness-level state):
+   - `SystemReadiness.kt` — enum `READY / DEGRADED / ACTION_REQUIRED /
+     UNSUPPORTED / ERROR` + `CapabilitySnapshot` data class.
+   - `CapabilityManager.kt` — gabungkan Overlay + Shizuku + Battery +
+     Freeform jadi satu `StateFlow<CapabilitySnapshot>`. Deteksi freeform:
+     `PackageManager.FEATURE_FREEFORM_WINDOW_MANAGEMENT` (positif kuat,
+     tapi ABSEN tidak membuktikan apa-apa — banyak HP dukung freeform tanpa
+     deklarasi fitur ini) dikombinasi dengan **bukti empiris** dari
+     `LaunchVerification.recordEmpiricalResult()` — 1x sukses terverifikasi
+     = terbukti selamanya (`true` menang & lengket), 1x gagal saja BELUM
+     cukup untuk vonis `UNSUPPORTED` (bisa jadi 1 app yang bermasalah, bukan
+     platform) kecuali belum pernah ada bukti sukses sama sekali.
+3. **`ShizukuShellManager.kt`** (parsial): tambah `dumpActivityState(pkg)`
+   — wrapper `dumpsys activity activities <pkg>` untuk `LaunchVerification`.
+4. **`MainActivity.kt`** (rewrite parsial, PROTECTED): `launchFloating()`
+   sekarang lewat `FloatingLaunchCoordinator`; `refreshUi()`/`onResume()`
+   panggil `CapabilityManager.refresh()`; observer baru
+   `observeSessionState()` (pola `repeatOnLifecycle` sama seperti
+   `observeBubbleState()`) — toast peringatan SEKALI per session kalau
+   verifikasi bilang "terbuka tapi tidak floating".
+5. **`FloatingBubbleService.kt`** (parsial, bukan protected tapi core
+   logic): `launchFloating()` di panel bubble juga lewat
+   `FloatingLaunchCoordinator` — dua entry point sekarang konsisten.
+6. **`strings.xml`**: 2 string baru —
+   `launch_not_floating_warning`, `freeform_unsupported_warning`.
+7. **`app/build.gradle`** (PROTECTED, parsial): `versionCode 5` /
+   `versionName "2.3.0"`. Tidak ada dependency baru — StateFlow/coroutines
+   sudah ada dari v2_Batch5.
+
+### Sengaja TIDAK dikerjakan batch ini (lihat audit untuk detail)
+- P0 #3 True Window Management (minimize/restore/resize/maximize internal).
+- P0 #4 True Bring-to-Front (Favorit masih relaunch, belum angkat window
+  existing) — butuh #3 selesai dulu secara logis.
+- P0 #7 Persistent Floating State penuh (disk) — registry saat ini
+  in-memory/proses saja.
+- Semua P1/P2 (smart panel positioning, inset handling, animation system,
+  dst) — menyusul setelah lapisan P0 tuntas, sesuai urutan kerja audit.
+- **Tidak ada perubahan UI/layout** di batch ini sama sekali (sengaja,
+  demi menahan jumlah file) — status capability baru belum punya
+  representasi visual sendiri di layar; ini utang kecil untuk P1 #14
+  "Unified setup/readiness state" batch berikutnya.
+
+## Known-Fix Log (terbaru di atas)
+- **v2_Batch6** (2026-08-16): FloatingSessionManager + CapabilityManager +
+  LaunchVerification + FloatingLaunchCoordinator — lihat "STATUS TERKINI"
+  di atas untuk detail penuh.
+- **v2_Batch5** (2026-08-16): scroll fix beranda, APK naming fix di
+  GitHub Release, dokumentasi dirombak jadi latest-on-top, arsitektur
+  modular anti-crash (`core/overlay`, `core/power`, `core/touch`,
+  `core/ipc`) — detail penuh diarsipkan di bawah ("Arsip Detail —
+  v2_Batch5").
+- v2_Batch4: Crash `UnsupportedOperationException: Failed to resolve
+  attribute` saat membuka panel bubble — root cause: `FloatingBubbleService`
+  meng-inflate layout dengan Service context mentah (no theme), sehingga
+  `?attr/selectableItemBackground` di `layout_app_list_item.xml` gagal
+  di-resolve. FIX: bungkus context dengan `ContextThemeWrapper(this,
+  R.style.Theme_FloatingApps)` sebelum inflate di `addBubble()`/`addPanel()`.
+  **Aturan tetap berlaku**: SEMUA `LayoutInflater.from(...)` di dalam
+  Service/non-Activity WAJIB pakai `ContextThemeWrapper`.
+- v2_Batch4: Ditambahkan Slot Favorit (pin via long-press, max 6, shared
+  SharedPreferences `floating_favorites`) — jawab keluhan "searching ribet".
+  Minimize memakai kombinasi: title bar native OS (bawaan freeform window)
+  + tap ulang dari Favorit untuk bring-to-front app yang sudah floating.
+- v2_Batch3: Ganti total mekanisme dari "bubble+catatan lokal" menjadi
+  "launcher app lain ke freeform window via Shizuku", sesuai niat awal user.
+- v1_Batch2: `secrets` context tidak boleh dipakai langsung di `if:` pada
+  GitHub Actions. Diperbaiki lewat `env:` + cek bash di dalam `run:`.
+
+### Arsip Detail — v2_Batch5 (2026-08-16)
 **Confidence Rating: 96%**
 
 Batch ini adalah **Atomic Change** (>10 file, disengaja — lihat alasan di
@@ -109,28 +226,6 @@ depan tanpa sadar itu breaking change.
 - [x] `Shizuku.removeRequestPermissionResultListener(this)` di
       `MainActivity.onDestroy()` — tidak berubah dari sebelumnya, tetap benar.
 
-## Known-Fix Log (terbaru di atas)
-- **v2_Batch5** (2026-08-16): scroll fix, APK naming fix, docs latest-on-top,
-  arsitektur modular anti-crash — lihat "STATUS TERKINI" di atas untuk detail
-  penuh (dipindah ke sana, bukan diringkas di sini, biar tidak ada dua
-  sumber kebenaran yang bisa beda).
-- v2_Batch4: Crash `UnsupportedOperationException: Failed to resolve
-  attribute` saat membuka panel bubble — root cause: `FloatingBubbleService`
-  meng-inflate layout dengan Service context mentah (no theme), sehingga
-  `?attr/selectableItemBackground` di `layout_app_list_item.xml` gagal
-  di-resolve. FIX: bungkus context dengan `ContextThemeWrapper(this,
-  R.style.Theme_FloatingApps)` sebelum inflate di `addBubble()`/`addPanel()`.
-  **Aturan tetap berlaku**: SEMUA `LayoutInflater.from(...)` di dalam
-  Service/non-Activity WAJIB pakai `ContextThemeWrapper`.
-- v2_Batch4: Ditambahkan Slot Favorit (pin via long-press, max 6, shared
-  SharedPreferences `floating_favorites`) — jawab keluhan "searching ribet".
-  Minimize memakai kombinasi: title bar native OS (bawaan freeform window)
-  + tap ulang dari Favorit untuk bring-to-front app yang sudah floating.
-- v2_Batch3: Ganti total mekanisme dari "bubble+catatan lokal" menjadi
-  "launcher app lain ke freeform window via Shizuku", sesuai niat awal user.
-- v1_Batch2: `secrets` context tidak boleh dipakai langsung di `if:` pada
-  GitHub Actions. Diperbaiki lewat `env:` + cek bash di dalam `run:`.
-
 ---
 ## Arsitektur Inti (referensi, jarang berubah)
 1. **ShellUserService** (`IShellService.aidl` + `ShellUserService.kt`):
@@ -176,7 +271,16 @@ pairing Wireless debugging sekali di awal.
 - **App pre-v11 Shizuku** (sangat jarang) tidak difallback ke alur
   permission lama — disederhanakan sejak v2.0.0.
 
-## Protected Assets Checklist (batch v2_Batch5)
+## Protected Assets Checklist (batch v2_Batch6)
+- [x] app/build.gradle — version bump saja, 0 dependency baru (parsial)
+- [x] MainActivity.kt — parsial (launchFloating + refreshUi/onResume +
+      observeSessionState baru; sisa struktur tidak diubah)
+- [x] AndroidManifest.xml — TIDAK diubah (verifikasi lewat shell Shizuku
+      yang sudah punya privilese, tidak perlu permission baru)
+- [x] settings.gradle, .gitignore, .gitattributes, release.yml — tidak diubah
+- [x] App.kt — tidak diubah
+
+### Protected Assets Checklist (batch v2_Batch5, histori)
 - [x] AndroidManifest.xml — tambah `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` (parsial)
 - [x] app/build.gradle — tambah 2 dependency + version bump (parsial)
 - [x] MainActivity.kt — rewrite (Langkah 3 + IPC bus observer)

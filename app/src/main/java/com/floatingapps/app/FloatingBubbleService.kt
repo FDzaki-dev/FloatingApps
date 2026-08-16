@@ -26,6 +26,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.floatingapps.app.core.ipc.BubbleStateBus
 import com.floatingapps.app.core.overlay.OverlayWindowController
+import com.floatingapps.app.core.session.FloatingLaunchCoordinator
 import com.floatingapps.app.core.touch.FloatingDragTouchListener
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -274,17 +275,14 @@ class FloatingBubbleService : Service() {
     }
 
     private fun launchFloating(app: FloatableApp) {
-        if (!ShizukuShellManager.isReady()) {
-            Toast.makeText(this, getString(R.string.shizuku_not_ready), Toast.LENGTH_SHORT).show()
-            return
+        when (val outcome = FloatingLaunchCoordinator.launch(app, serviceScope)) {
+            is FloatingLaunchCoordinator.LaunchOutcome.NotReady ->
+                Toast.makeText(this, getString(R.string.shizuku_not_ready), Toast.LENGTH_SHORT).show()
+            is FloatingLaunchCoordinator.LaunchOutcome.CommandFailed ->
+                Toast.makeText(this, getString(R.string.launch_failed, app.label), Toast.LENGTH_SHORT).show()
+            is FloatingLaunchCoordinator.LaunchOutcome.CommandSucceeded ->
+                Toast.makeText(this, getString(R.string.launch_success, app.label), Toast.LENGTH_SHORT).show()
         }
-        val result = ShizukuShellManager.launchFloating(app.packageName, app.activityName)
-        val ok = !result.contains("Error", ignoreCase = true)
-        Toast.makeText(
-            this,
-            if (ok) getString(R.string.launch_success, app.label) else getString(R.string.launch_failed, app.label),
-            Toast.LENGTH_SHORT
-        ).show()
         removePanel()
     }
 

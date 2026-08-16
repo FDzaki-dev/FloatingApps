@@ -1,15 +1,25 @@
 # Floating Apps
 
-## 🟢 Status Terkini — v2.2.0 (2026-08-16)
-- **Terbaru:** arsitektur bubble dirombak modular (`core/overlay`, `core/power`,
-  `core/touch`, `core/ipc`) — anti-crash, drag boundary-constrained +
-  snap-to-edge, tahan rotasi, exemption baterai OEM. Detail lengkap & alasan
-  desain: lihat `PROJECT_STATE.md` (paling atas = paling baru).
-- **Fixed:** beranda sekarang bisa di-scroll penuh ke bawah (sebelumnya
-  konten header bisa overflow tanpa cara menggulir).
-- **Fixed:** nama file APK di GitHub Release sekarang deskriptif
-  (`FloatingApps-v2.2.0-build<run>.apk`), bukan `app-release.apk` generik.
+## 🟢 Status Terkini — v2.3.0 (2026-08-16)
+- **Terbaru:** launch sekarang punya registry & verifikasi nyata — app
+  tidak lagi dianggap "berhasil floating" hanya karena command shell tidak
+  error. Kalau app terbuka tapi ternyata TIDAK dalam mode floating (device/
+  ROM tidak mendukung), kamu akan diberi tahu lewat notifikasi singkat.
+- **Terbaru:** deteksi kemampuan freeform device (best-effort) — kalau
+  device kemungkinan tidak mendukung, ada peringatan sebelum mencoba.
+- Detail lengkap & alasan desain: lihat `PROJECT_STATE.md` (paling atas =
+  paling baru). Item besar berikutnya (kontrol minimize/resize/close
+  internal, bring-to-front window yang sudah floating) menyusul di batch
+  berikutnya — lihat `FloatingApps_v2_2_0_Final_Gap_Audit.md`.
 - Rilis APK terbaru: lihat tab **Releases** di sidebar repo ini.
+
+## Status Sebelumnya — v2.2.0
+- Arsitektur bubble dirombak modular (`core/overlay`, `core/power`,
+  `core/touch`, `core/ipc`) — anti-crash, drag boundary-constrained +
+  snap-to-edge, tahan rotasi, exemption baterai OEM.
+- Fixed: beranda sekarang bisa di-scroll penuh ke bawah.
+- Fixed: nama file APK di GitHub Release sekarang deskriptif
+  (`FloatingApps-v2.2.0-build<run>.apk`), bukan `app-release.apk` generik.
 
 ## Cara Pakai
 1. **Izin Overlay**: tap "Izinkan Tampil di Atas Aplikasi Lain" → aktifkan

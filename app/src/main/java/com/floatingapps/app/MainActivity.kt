@@ -19,9 +19,14 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.floatingapps.app.core.capability.CapabilityManager
+import com.floatingapps.app.core.capability.SystemReadiness
 import com.floatingapps.app.core.ipc.BubbleStateBus
 import com.floatingapps.app.core.overlay.OverlayPermissionHelper
 import com.floatingapps.app.core.power.BatteryOptimizationHelper
+import com.floatingapps.app.core.session.FloatingLaunchCoordinator
+import com.floatingapps.app.core.session.FloatingSessionManager
+import com.floatingapps.app.core.session.FloatingSessionState
 import kotlinx.coroutines.launch
 import rikka.shizuku.Shizuku
 
@@ -43,6 +48,7 @@ class MainActivity : AppCompatActivity(), Shizuku.OnRequestPermissionResultListe
     private lateinit var rvApps: RecyclerView
     private lateinit var favoritesContainer: LinearLayout
     private var allAppsCache: List<FloatableApp> = emptyList()
+    private val notifiedFailedSessionKeys = mutableSetOf<String>()
 
     private val adapter = AppListAdapter(
         onClick = { app -> launchFloating(app) },
@@ -113,6 +119,7 @@ class MainActivity : AppCompatActivity(), Shizuku.OnRequestPermissionResultListe
         }
         bindFavorites()
         observeBubbleState()
+        observeSessionState()
     }
 
     override fun onDestroy() {
@@ -123,6 +130,7 @@ class MainActivity : AppCompatActivity(), Shizuku.OnRequestPermissionResultListe
     override fun onResume() {
         super.onResume()
         ShizukuShellManager.bindIfNeeded()
+        CapabilityManager.refresh(this)
         refreshUi()
     }
 
@@ -139,6 +147,34 @@ class MainActivity : AppCompatActivity(), Shizuku.OnRequestPermissionResultListe
                 BubbleStateBus.isBubbleRunning.collect {
                     btnToggleBubble.text = if (it) getString(R.string.stop_bubble)
                         else getString(R.string.start_bubble)
+                }
+            }
+        }
+    }
+
+    /**
+     * Surfaces the async verdict of [com.floatingapps.app.core.session.
+     * LaunchVerification]: the launch toast at tap-time is only "the shell
+     * command ran" - this warns the user, once per session, when a launch
+     * that seemed to succeed turned out NOT to actually be floating (the
+     * "Launched vs Actually Floating" gap from the v2.2.0 audit).
+     */
+    private fun observeSessionState() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                FloatingSessionManager.sessions.collect { sessions ->
+                    sessions.values
+                        .filter { it.state == FloatingSessionState.FAILED_NOT_FLOATING }
+                        .forEach { session ->
+                            val key = "${session.packageName}/${session.activityName}"
+                            if (notifiedFailedSessionKeys.add(key)) {
+                                Toast.makeText(
+                                    this@MainActivity,
+                                    getString(R.string.launch_not_floating_warning, session.label),
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        }
                 }
             }
         }
@@ -239,15 +275,16 @@ class MainActivity : AppCompatActivity(), Shizuku.OnRequestPermissionResultListe
     }
 
     private fun launchFloating(app: FloatableApp) {
-        if (!ShizukuShellManager.isReady()) {
-            Toast.makeText(this, getString(R.string.shizuku_not_ready), Toast.LENGTH_SHORT).show()
-            return
+        if (CapabilityManager.snapshot.value.readiness == SystemReadiness.UNSUPPORTED) {
+            Toast.makeText(this, getString(R.string.freeform_unsupported_warning), Toast.LENGTH_LONG).show()
         }
-        val result = ShizukuShellManager.launchFloating(app.packageName, app.activityName)
-        if (result.contains("Error", ignoreCase = true)) {
-            Toast.makeText(this, getString(R.string.launch_failed, app.label), Toast.LENGTH_SHORT).show()
-        } else {
-            Toast.makeText(this, getString(R.string.launch_success, app.label), Toast.LENGTH_SHORT).show()
+        when (val outcome = FloatingLaunchCoordinator.launch(app, lifecycleScope)) {
+            is FloatingLaunchCoordinator.LaunchOutcome.NotReady ->
+                Toast.makeText(this, getString(R.string.shizuku_not_ready), Toast.LENGTH_SHORT).show()
+            is FloatingLaunchCoordinator.LaunchOutcome.CommandFailed ->
+                Toast.makeText(this, getString(R.string.launch_failed, app.label), Toast.LENGTH_SHORT).show()
+            is FloatingLaunchCoordinator.LaunchOutcome.CommandSucceeded ->
+                Toast.makeText(this, getString(R.string.launch_success, app.label), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -309,7 +346,8 @@ class MainActivity : AppCompatActivity(), Shizuku.OnRequestPermissionResultListe
         btnToggleBubble.text = if (FloatingBubbleService.isRunning)
             getString(R.string.stop_bubble) else getString(R.string.start_bubble)
 
-        val readyToFloat = overlayGranted && shizukuReady
+        CapabilityManager.refresh(this)
+        val readyToFloat = CapabilityManager.snapshot.value.readiness != SystemReadiness.ACTION_REQUIRED
         rvApps.alpha = if (readyToFloat) 1f else 0.4f
         etSearch.isEnabled = true
     }
