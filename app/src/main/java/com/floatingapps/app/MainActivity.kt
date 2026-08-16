@@ -10,6 +10,7 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.widget.Button
 import android.widget.EditText
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -32,8 +33,13 @@ class MainActivity : AppCompatActivity(), Shizuku.OnRequestPermissionResultListe
     private lateinit var btnToggleBubble: Button
     private lateinit var etSearch: EditText
     private lateinit var rvApps: RecyclerView
+    private lateinit var favoritesContainer: LinearLayout
+    private var allAppsCache: List<FloatableApp> = emptyList()
 
-    private val adapter = AppListAdapter { app -> launchFloating(app) }
+    private val adapter = AppListAdapter(
+        onClick = { app -> launchFloating(app) },
+        onLongClick = { app -> togglePin(app) }
+    )
 
     private val overlaySettingsLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
@@ -54,6 +60,7 @@ class MainActivity : AppCompatActivity(), Shizuku.OnRequestPermissionResultListe
         btnToggleBubble = findViewById(R.id.btnToggleBubble)
         etSearch = findViewById(R.id.etSearch)
         rvApps = findViewById(R.id.rvApps)
+        favoritesContainer = findViewById(R.id.favoritesContainer)
 
         rvApps.layoutManager = LinearLayoutManager(this)
         rvApps.adapter = adapter
@@ -79,7 +86,12 @@ class MainActivity : AppCompatActivity(), Shizuku.OnRequestPermissionResultListe
         }
 
         Shizuku.addRequestPermissionResultListener(this)
-        AppListLoader.load(this) { apps -> adapter.submitList(apps) }
+        AppListLoader.load(this) { apps ->
+            allAppsCache = apps
+            adapter.submitList(apps)
+            bindFavorites()
+        }
+        bindFavorites()
     }
 
     override fun onDestroy() {
@@ -181,6 +193,27 @@ class MainActivity : AppCompatActivity(), Shizuku.OnRequestPermissionResultListe
         } else {
             Toast.makeText(this, getString(R.string.launch_success, app.label), Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private fun bindFavorites() {
+        FavoritesRowBinder.bind(
+            container = favoritesContainer,
+            allApps = allAppsCache,
+            onSlotTap = { app -> launchFloating(app) },
+            onEmptySlotTap = {
+                Toast.makeText(this, getString(R.string.favorites_hint), Toast.LENGTH_SHORT).show()
+            }
+        )
+    }
+
+    private fun togglePin(app: FloatableApp) {
+        val added = FavoritesManager.toggleFavorite(this, app)
+        Toast.makeText(
+            this,
+            if (added) getString(R.string.pinned_added, app.label) else getString(R.string.pinned_removed, app.label),
+            Toast.LENGTH_SHORT
+        ).show()
+        bindFavorites()
     }
 
     private fun refreshUi() {

@@ -1,5 +1,25 @@
 # CHANGELOG
 
+## [2.1.0] — v2_Batch4 — Crash Fix + Favorites Slots
+### Fixed
+- **Crash saat buka panel bubble** (`InflateException` di
+  `layout_app_list_item` → `UnsupportedOperationException: Failed to resolve
+  attribute`). Akar masalah: `FloatingBubbleService` meng-inflate layout
+  pakai Service context mentah (tanpa tema), jadi `?attr/selectableItem
+  Background` gagal di-resolve. Diperbaiki dengan `ContextThemeWrapper(this,
+  R.style.Theme_FloatingApps)` di `addBubble()` dan `addPanel()`. Ditemukan
+  langsung dari crash log yang dikirim user — bukti crash logger bawaan
+  berfungsi seperti dirancang.
+
+### Added
+- **Slot Favorit** (6 slot): tekan & tahan aplikasi di daftar untuk pin;
+  tap slot terisi = langsung floating tanpa perlu cari lagi. Tersedia di
+  MainActivity dan panel bubble, tersimpan di SharedPreferences (bersama).
+- **Hint minimize**: jendela freeform native sudah punya kontrol minimize/
+  maximize/close di title bar bawaan OS. Tap ulang app yang sama (termasuk
+  dari slot Favorit) membawanya kembali ke depan jika sedang berjalan —
+  jadi Favorit sekaligus berfungsi sebagai cara cepat "un-minimize".
+
 ## [2.0.0] — v2_Batch3 — Architecture Pivot
 ### Changed (breaking)
 - Konsep app diperbaiki total: dari "bubble + catatan cepat lokal" menjadi

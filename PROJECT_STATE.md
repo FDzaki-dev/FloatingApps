@@ -68,10 +68,23 @@ residual terbesar: perilaku freeform window itu sendiri device-dependent
 di sandbox ini (tidak ada Android SDK/network). Build pertama sebaiknya
 dites di device yang sudah Shizuku-ready.
 
-## Batch: v2_Batch3 (Pivot arsitektur — Atomic Change)
+## Batch: v2_Batch4 (Crash fix + Favorites)
 
 ## Known-Fix Log
 - v1_Batch2: `secrets` context tidak boleh dipakai langsung di `if:` pada
   GitHub Actions. Diperbaiki lewat `env:` + cek bash di dalam `run:`.
 - v2_Batch3: Ganti total mekanisme dari "bubble+catatan lokal" menjadi
   "launcher app lain ke freeform window via Shizuku", sesuai niat awal user.
+- v2_Batch4: Crash `UnsupportedOperationException: Failed to resolve
+  attribute` saat membuka panel bubble — root cause: `FloatingBubbleService`
+  meng-inflate layout dengan Service context mentah (no theme), sehingga
+  `?attr/selectableItemBackground` di `layout_app_list_item.xml` gagal
+  di-resolve. FIX: bungkus context dengan `ContextThemeWrapper(this,
+  R.style.Theme_FloatingApps)` sebelum inflate di `addBubble()`/`addPanel()`.
+  **Aturan baru untuk batch berikutnya**: SEMUA `LayoutInflater.from(...)`
+  di dalam Service/non-Activity WAJIB pakai `ContextThemeWrapper`, tidak
+  boleh context mentah — cegah kelas bug yang sama terulang.
+- v2_Batch4: Ditambahkan Slot Favorit (pin via long-press, max 6, shared
+  SharedPreferences `floating_favorites`) — jawab keluhan "searching ribet".
+  Minimize memakai kombinasi: title bar native OS (bawaan freeform window)
+  + tap ulang dari Favorit untuk bring-to-front app yang sudah floating.

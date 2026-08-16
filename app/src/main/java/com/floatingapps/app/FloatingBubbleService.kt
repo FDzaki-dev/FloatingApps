@@ -11,6 +11,7 @@ import android.graphics.PixelFormat
 import android.os.IBinder
 import android.text.Editable
 import android.text.TextWatcher
+import android.view.ContextThemeWrapper
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -18,6 +19,7 @@ import android.view.View
 import android.view.WindowManager
 import android.widget.EditText
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -103,7 +105,8 @@ class FloatingBubbleService : Service() {
     }
 
     private fun addBubble() {
-        val inflater = LayoutInflater.from(this)
+        val themedContext = ContextThemeWrapper(this, R.style.Theme_FloatingApps)
+        val inflater = LayoutInflater.from(themedContext)
         val view = inflater.inflate(R.layout.layout_bubble, null)
         bubbleView = view
 
@@ -178,8 +181,11 @@ class FloatingBubbleService : Service() {
         }
     }
 
+    private var allAppsCache: List<FloatableApp> = emptyList()
+
     private fun addPanel() {
-        val inflater = LayoutInflater.from(this)
+        val themedContext = ContextThemeWrapper(this, R.style.Theme_FloatingApps)
+        val inflater = LayoutInflater.from(themedContext)
         val view = inflater.inflate(R.layout.layout_bubble_expanded, null)
 
         val params = WindowManager.LayoutParams(
@@ -193,12 +199,21 @@ class FloatingBubbleService : Service() {
         params.x = bubbleParams.x
         params.y = bubbleParams.y + 120
 
+        val favoritesContainer = view.findViewById<LinearLayout>(R.id.favoritesContainerPanel)
         val rv = view.findViewById<RecyclerView>(R.id.rvPickerApps)
         rv.layoutManager = LinearLayoutManager(this)
-        val adapter = AppListAdapter { app -> launchFloating(app) }
+        val adapter = AppListAdapter(
+            onClick = { app -> launchFloating(app) },
+            onLongClick = { app -> togglePin(app, favoritesContainer) }
+        )
         pickerAdapter = adapter
         rv.adapter = adapter
-        AppListLoader.load(this) { apps -> adapter.submitList(apps) }
+        AppListLoader.load(this) { apps ->
+            allAppsCache = apps
+            adapter.submitList(apps)
+            bindFavorites(favoritesContainer)
+        }
+        bindFavorites(favoritesContainer)
 
         val etSearch = view.findViewById<EditText>(R.id.etPickerSearch)
         etSearch.addTextChangedListener(object : TextWatcher {
@@ -219,6 +234,27 @@ class FloatingBubbleService : Service() {
         } catch (e: Exception) {
             // overlay permission may have been revoked; skip silently
         }
+    }
+
+    private fun bindFavorites(container: LinearLayout) {
+        FavoritesRowBinder.bind(
+            container = container,
+            allApps = allAppsCache,
+            onSlotTap = { app -> launchFloating(app) },
+            onEmptySlotTap = {
+                Toast.makeText(this, getString(R.string.favorites_hint), Toast.LENGTH_SHORT).show()
+            }
+        )
+    }
+
+    private fun togglePin(app: FloatableApp, favoritesContainer: LinearLayout) {
+        val added = FavoritesManager.toggleFavorite(this, app)
+        Toast.makeText(
+            this,
+            if (added) getString(R.string.pinned_added, app.label) else getString(R.string.pinned_removed, app.label),
+            Toast.LENGTH_SHORT
+        ).show()
+        bindFavorites(favoritesContainer)
     }
 
     private fun launchFloating(app: FloatableApp) {

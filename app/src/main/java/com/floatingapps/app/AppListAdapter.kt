@@ -8,7 +8,8 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
 class AppListAdapter(
-    private val onClick: (FloatableApp) -> Unit
+    private val onClick: (FloatableApp) -> Unit,
+    private val onLongClick: (FloatableApp) -> Unit = {}
 ) : RecyclerView.Adapter<AppListAdapter.ViewHolder>() {
 
     private var allItems: List<FloatableApp> = emptyList()
@@ -30,6 +31,10 @@ class AppListAdapter(
         holder.icon.setImageDrawable(app.icon)
         holder.label.text = app.label
         holder.itemView.setOnClickListener { onClick(app) }
+        holder.itemView.setOnLongClickListener {
+            onLongClick(app)
+            true
+        }
     }
 
     override fun getItemCount(): Int = shownItems.size

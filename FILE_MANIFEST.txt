@@ -1,5 +1,5 @@
-FLOATING APPS — FILE MANIFEST (v2_Batch3 / Architecture Pivot)
-Total: 37 file
+FLOATING APPS — FILE MANIFEST (v2_Batch4 / Crash Fix + Favorites)
+Total: 43 file
 
 [PROTECTED - Edit Parsial Only]
 AndroidManifest.xml              app/src/main/AndroidManifest.xml
@@ -21,19 +21,23 @@ CrashHandler.kt                  app/src/main/java/com/floatingapps/app/CrashHan
 FloatableApp.kt                  app/src/main/java/com/floatingapps/app/FloatableApp.kt
 AppListLoader.kt                 app/src/main/java/com/floatingapps/app/AppListLoader.kt
 AppListAdapter.kt                app/src/main/java/com/floatingapps/app/AppListAdapter.kt
+FavoritesManager.kt              app/src/main/java/com/floatingapps/app/FavoritesManager.kt (NEW v2_Batch4)
+FavoritesRowBinder.kt            app/src/main/java/com/floatingapps/app/FavoritesRowBinder.kt (NEW v2_Batch4)
 
 [RESOURCES - Editable]
 proguard-rules.pro               app/proguard-rules.pro
 gradle.properties                gradle.properties
 activity_main.xml                app/src/main/res/layout/activity_main.xml
 layout_bubble.xml                app/src/main/res/layout/layout_bubble.xml
-layout_bubble_expanded.xml       app/src/main/res/layout/layout_bubble_expanded.xml (app picker panel)
+layout_bubble_expanded.xml       app/src/main/res/layout/layout_bubble_expanded.xml (app picker + favorit)
 layout_app_list_item.xml         app/src/main/res/layout/layout_app_list_item.xml
+layout_favorite_slot.xml         app/src/main/res/layout/layout_favorite_slot.xml (NEW v2_Batch4)
 strings.xml                      app/src/main/res/values/strings.xml
 colors.xml                       app/src/main/res/values/colors.xml
 themes.xml                       app/src/main/res/values/themes.xml
 bubble_background.xml            app/src/main/res/drawable/bubble_background.xml
 panel_background.xml             app/src/main/res/drawable/panel_background.xml
+favorite_slot_background.xml     app/src/main/res/drawable/favorite_slot_background.xml (NEW v2_Batch4)
 ic_close.xml                     app/src/main/res/drawable/ic_close.xml
 ic_bubble.xml                    app/src/main/res/drawable/ic_bubble.xml
 ic_launcher_foreground.xml       app/src/main/res/drawable/ic_launcher_foreground.xml
@@ -49,11 +53,10 @@ PROJECT_STATE.md                 PROJECT_STATE.md
 FILE_MANIFEST.txt                FILE_MANIFEST.txt (file ini)
 
 [SENGAJA TIDAK ADA]
-gradlew / gradlew.bat / gradle/wrapper/gradle-wrapper.jar
-  -> lihat PROJECT_STATE.md batch v1 untuk alasan
-release.keystore
-  -> di-generate sendiri oleh user (lihat FloatingApps_secrets.txt sebelumnya)
+gradlew / gradlew.bat / gradle/wrapper/gradle-wrapper.jar  -> lihat PROJECT_STATE.md batch v1
+release.keystore                 -> di-generate sendiri oleh user
 
-[DIHAPUS DI BATCH INI]
-Fitur "Catatan Cepat" (SharedPreferences notes, EditText etNote/btnSave)
-  -> diganti app picker (Shizuku freeform launcher) sesuai maksud awal user
+[ATURAN BARU HASIL BATCH INI]
+Semua LayoutInflater.from(...) di dalam Service/non-Activity WAJIB pakai
+ContextThemeWrapper(this, R.style.Theme_FloatingApps) — lihat Known-Fix Log
+di PROJECT_STATE.md untuk detail root cause crash yang dicegah aturan ini.

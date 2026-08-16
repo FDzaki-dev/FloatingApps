@@ -23,6 +23,12 @@
     <string name="shizuku_denied">Izin Shizuku ditolak</string>
     <string name="shizuku_not_ready">Shizuku belum siap — selesaikan setup dulu</string>
 
+    <string name="favorites_title">Favorit — tap untuk langsung floating</string>
+    <string name="favorites_hint">Tekan &amp; tahan aplikasi di daftar bawah untuk pin ke slot favorit di atas</string>
+    <string name="pinned_added">%1$s ditambahkan ke Favorit</string>
+    <string name="pinned_removed">%1$s dihapus dari Favorit</string>
+    <string name="minimize_hint">Jendela floating punya tombol minimize/close bawaan di title bar-nya. Tap ikon app yang sama lagi (atau di Favorit) untuk memunculkannya kembali ke depan.</string>
+
     <string name="start_bubble">Mulai Bubble Akses Cepat</string>
     <string name="stop_bubble">Hentikan Bubble</string>
 
