@@ -46,6 +46,10 @@
     <string name="launch_failed">Gagal membuka %1$s di floating window</string>
     <string name="launch_not_floating_warning">%1$s terbuka, tapi sepertinya TIDAK dalam mode floating — device/ROM ini mungkin tidak mendukung freeform</string>
     <string name="freeform_unsupported_warning">Perangkat ini terdeteksi kemungkinan tidak mendukung mode floating (freeform). Tetap dicoba…</string>
+    <string name="bringing_to_front">Membawa %1$s ke depan…</string>
+    <string name="closed_success">%1$s ditutup</string>
+    <string name="closed_failed">Gagal menutup %1$s</string>
+    <string name="favorites_long_press_hint">Favorit yang sedang floating: tekan singkat untuk ke depan, tekan &amp; tahan untuk tutup</string>
 
     <string name="notif_channel_name">Floating Bubble</string>
     <string name="notif_channel_desc">Notifikasi latar belakang untuk layanan floating bubble</string>

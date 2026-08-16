@@ -1,17 +1,22 @@
 # Floating Apps
 
-## 🟢 Status Terkini — v2.3.0 (2026-08-16)
-- **Terbaru:** launch sekarang punya registry & verifikasi nyata — app
-  tidak lagi dianggap "berhasil floating" hanya karena command shell tidak
-  error. Kalau app terbuka tapi ternyata TIDAK dalam mode floating (device/
-  ROM tidak mendukung), kamu akan diberi tahu lewat notifikasi singkat.
-- **Terbaru:** deteksi kemampuan freeform device (best-effort) — kalau
-  device kemungkinan tidak mendukung, ada peringatan sebelum mencoba.
+## 🟢 Status Terkini — v2.4.0 (2026-08-16)
+- **Terbaru:** Favorit yang sudah floating sekarang punya bring-to-front
+  yang BENAR — tap ulang mengangkat window yang sama (diverifikasi, bukan
+  ditebak), bukan relaunch buta seperti sebelumnya.
+- **Terbaru:** tekan & tahan Favorit yang sedang floating untuk menutupnya.
+- **Terbaru:** riwayat sesi bertahan lintas restart app (belum termasuk
+  posisi/ukuran window — lihat `PROJECT_STATE.md` untuk kenapa).
 - Detail lengkap & alasan desain: lihat `PROJECT_STATE.md` (paling atas =
-  paling baru). Item besar berikutnya (kontrol minimize/resize/close
-  internal, bring-to-front window yang sudah floating) menyusul di batch
-  berikutnya — lihat `FloatingApps_v2_2_0_Final_Gap_Audit.md`.
+  paling baru). Item besar berikutnya (resize/reposition/maximize window
+  internal) menyusul di batch berikutnya — lihat
+  `FloatingApps_v2_2_0_Final_Gap_Audit.md`.
 - Rilis APK terbaru: lihat tab **Releases** di sidebar repo ini.
+
+## Status Sebelumnya — v2.3.0
+- Launch punya registry & verifikasi nyata — app tidak lagi dianggap
+  "berhasil floating" hanya karena command shell tidak error.
+- Deteksi kemampuan freeform device (best-effort).
 
 ## Status Sebelumnya — v2.2.0
 - Arsitektur bubble dirombak modular (`core/overlay`, `core/power`,
@@ -49,6 +54,13 @@
 - Exemption baterai standar (Doze) dijamin API Android; jalan pintas
   Autostart OEM di Langkah 3 best-effort — komponennya tidak didokumentasikan
   resmi dan bisa berbeda antar versi ROM.
+- Menutup app lewat tekan-tahan Favorit memakai `am force-stop` — mematikan
+  SELURUH proses app tsb (bukan cuma satu window), jadi data yang belum
+  disimpan app itu bisa hilang. Ini trade-off sadar demi keandalan lintas
+  versi Android.
+- Riwayat sesi yang bertahan lintas restart app HANYA riwayat, bukan
+  jaminan window masih hidup — setelah restart, app tidak bisa tahu status
+  window sebenarnya tanpa cek ulang.
 
 ## Build APK
 Otomatis lewat GitHub Actions → **GitHub Release** setiap push ke `main`.

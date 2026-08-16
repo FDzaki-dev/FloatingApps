@@ -27,7 +27,9 @@ import androidx.recyclerview.widget.RecyclerView
 import com.floatingapps.app.core.ipc.BubbleStateBus
 import com.floatingapps.app.core.overlay.OverlayWindowController
 import com.floatingapps.app.core.session.FloatingLaunchCoordinator
+import com.floatingapps.app.core.session.FloatingSessionManager
 import com.floatingapps.app.core.touch.FloatingDragTouchListener
+import com.floatingapps.app.core.window.FloatingWindowController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -260,8 +262,22 @@ class FloatingBubbleService : Service() {
             onSlotTap = { app -> launchFloating(app) },
             onEmptySlotTap = {
                 Toast.makeText(this, getString(R.string.favorites_hint), Toast.LENGTH_SHORT).show()
-            }
+            },
+            onSlotLongClick = { app -> closeFloatingFavorite(app) }
         )
+    }
+
+    /** Mirrors MainActivity.closeFloatingFavorite - see its doc. Both entry
+     *  points must stay in lockstep on session/window actions, same rule
+     *  established for launchFloating() via FloatingLaunchCoordinator. */
+    private fun closeFloatingFavorite(app: FloatableApp) {
+        if (FloatingSessionManager.sessionForApp(app) == null) return
+        val closed = FloatingWindowController.close(app)
+        Toast.makeText(
+            this,
+            if (closed) getString(R.string.closed_success, app.label) else getString(R.string.closed_failed, app.label),
+            Toast.LENGTH_SHORT
+        ).show()
     }
 
     private fun togglePin(app: FloatableApp, favoritesContainer: LinearLayout) {
@@ -282,6 +298,8 @@ class FloatingBubbleService : Service() {
                 Toast.makeText(this, getString(R.string.launch_failed, app.label), Toast.LENGTH_SHORT).show()
             is FloatingLaunchCoordinator.LaunchOutcome.CommandSucceeded ->
                 Toast.makeText(this, getString(R.string.launch_success, app.label), Toast.LENGTH_SHORT).show()
+            is FloatingLaunchCoordinator.LaunchOutcome.BringingToFront ->
+                Toast.makeText(this, getString(R.string.bringing_to_front, app.label), Toast.LENGTH_SHORT).show()
         }
         removePanel()
     }

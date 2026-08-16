@@ -1,13 +1,13 @@
-FLOATING APPS — FILE MANIFEST (v2_Batch6 / Session Registry + Capability Detection + Launch Verification)
-Total: 57 file
+FLOATING APPS — FILE MANIFEST (v2_Batch7 / True Bring-to-Front + Window Close + Session Persistence)
+Total: 60 file
 
 [PROTECTED - Edit Parsial Only]
 AndroidManifest.xml              app/src/main/AndroidManifest.xml (+REQUEST_IGNORE_BATTERY_OPTIMIZATIONS v2_Batch5)
 build.gradle (root)              build.gradle
-build.gradle (module)            app/build.gradle (versionCode 5/2.3.0 v2_Batch6, no new deps)
+build.gradle (module)            app/build.gradle (versionCode 6/2.4.0 v2_Batch7, no new deps)
 settings.gradle                  settings.gradle
-MainActivity.kt                  app/src/main/java/com/floatingapps/app/MainActivity.kt (parsial v2_Batch6: launchFloating via coordinator + capability/session observers)
-App.kt (Application)             app/src/main/java/com/floatingapps/app/App.kt
+MainActivity.kt                  app/src/main/java/com/floatingapps/app/MainActivity.kt (parsial v2_Batch7: BringingToFront outcome + closeFloatingFavorite via long-press)
+App.kt (Application)             app/src/main/java/com/floatingapps/app/App.kt (parsial v2_Batch7: FloatingSessionManager.init())
 .gitignore                       .gitignore
 .gitattributes                   .gitattributes
 release.yml (workflow)           .github/workflows/release.yml (APK naming fix v2_Batch5)
@@ -15,25 +15,30 @@ release.yml (workflow)           .github/workflows/release.yml (APK naming fix v
 [CORE LOGIC — Shizuku / Freeform launcher]
 IShellService.aidl               app/src/main/aidl/com/floatingapps/app/IShellService.aidl
 ShellUserService.kt              app/src/main/java/com/floatingapps/app/ShellUserService.kt
-ShizukuShellManager.kt           app/src/main/java/com/floatingapps/app/ShizukuShellManager.kt (+dumpActivityState v2_Batch6)
-FloatingBubbleService.kt         app/src/main/java/com/floatingapps/app/FloatingBubbleService.kt (parsial v2_Batch6: launchFloating via coordinator)
+ShizukuShellManager.kt           app/src/main/java/com/floatingapps/app/ShizukuShellManager.kt (+dumpActivityState v2_Batch6; +forceStop v2_Batch7)
+FloatingBubbleService.kt         app/src/main/java/com/floatingapps/app/FloatingBubbleService.kt (parsial v2_Batch7: BringingToFront outcome + closeFloatingFavorite, mirrors MainActivity)
 CrashHandler.kt                  app/src/main/java/com/floatingapps/app/CrashHandler.kt
 FloatableApp.kt                  app/src/main/java/com/floatingapps/app/FloatableApp.kt
 AppListLoader.kt                 app/src/main/java/com/floatingapps/app/AppListLoader.kt
 AppListAdapter.kt                app/src/main/java/com/floatingapps/app/AppListAdapter.kt
 FavoritesManager.kt              app/src/main/java/com/floatingapps/app/FavoritesManager.kt
-FavoritesRowBinder.kt            app/src/main/java/com/floatingapps/app/FavoritesRowBinder.kt
+FavoritesRowBinder.kt            app/src/main/java/com/floatingapps/app/FavoritesRowBinder.kt (parsial v2_Batch7: +onSlotLongClick param, default no-op)
 
-[CORE LOGIC — Session Registry + Capability Detection (NEW v2_Batch6)]
-FloatingSessionState.kt          app/src/main/java/com/floatingapps/app/core/session/FloatingSessionState.kt
-FloatingSession.kt               app/src/main/java/com/floatingapps/app/core/session/FloatingSession.kt
-FloatingSessionManager.kt        app/src/main/java/com/floatingapps/app/core/session/FloatingSessionManager.kt
-LaunchVerification.kt            app/src/main/java/com/floatingapps/app/core/session/LaunchVerification.kt
-FloatingLaunchCoordinator.kt     app/src/main/java/com/floatingapps/app/core/session/FloatingLaunchCoordinator.kt
+[CORE LOGIC — Session Registry + Capability Detection (v2_Batch6)]
+FloatingSessionState.kt          app/src/main/java/com/floatingapps/app/core/session/FloatingSessionState.kt (parsial v2_Batch7: +RESTORED)
+FloatingSession.kt               app/src/main/java/com/floatingapps/app/core/session/FloatingSession.kt (parsial v2_Batch7: +taskId, +duplicateSuspected)
+FloatingSessionManager.kt        app/src/main/java/com/floatingapps/app/core/session/FloatingSessionManager.kt (parsial v2_Batch7: +init/sessionForApp/onTaskIdResolved/onBroughtToFront/onDuplicateWindowSuspected, auto-persist per transition)
+LaunchVerification.kt            app/src/main/java/com/floatingapps/app/core/session/LaunchVerification.kt (parsial v2_Batch7: taskId resolve on verify)
+FloatingLaunchCoordinator.kt     app/src/main/java/com/floatingapps/app/core/session/FloatingLaunchCoordinator.kt (parsial v2_Batch7: raise-vs-relaunch routing, +BringingToFront outcome)
+SessionPersistence.kt            app/src/main/java/com/floatingapps/app/core/session/SessionPersistence.kt (NEW v2_Batch7 — disk-backed session history, FIFO cap 20)
 SystemReadiness.kt               app/src/main/java/com/floatingapps/app/core/capability/SystemReadiness.kt
 CapabilityManager.kt             app/src/main/java/com/floatingapps/app/core/capability/CapabilityManager.kt
 
-[CORE LOGIC — Modular Bubble Architecture (NEW v2_Batch5)]
+[CORE LOGIC — Window Control (NEW v2_Batch7)]
+TaskIdParser.kt                  app/src/main/java/com/floatingapps/app/core/window/TaskIdParser.kt (best-effort taskId extraction from dumpsys text)
+FloatingWindowController.kt      app/src/main/java/com/floatingapps/app/core/window/FloatingWindowController.kt (bringToFront + close, via Shizuku shell)
+
+[CORE LOGIC — Modular Bubble Architecture (v2_Batch5)]
 OverlayPermissionHelper.kt       app/src/main/java/com/floatingapps/app/core/overlay/OverlayPermissionHelper.kt
 OverlayWindowController.kt       app/src/main/java/com/floatingapps/app/core/overlay/OverlayWindowController.kt
 BatteryOptimizationHelper.kt     app/src/main/java/com/floatingapps/app/core/power/BatteryOptimizationHelper.kt
@@ -50,7 +55,7 @@ layout_bubble.xml                app/src/main/res/layout/layout_bubble.xml
 layout_bubble_expanded.xml       app/src/main/res/layout/layout_bubble_expanded.xml
 layout_app_list_item.xml         app/src/main/res/layout/layout_app_list_item.xml
 layout_favorite_slot.xml         app/src/main/res/layout/layout_favorite_slot.xml
-strings.xml                      app/src/main/res/values/strings.xml (+step3/battery strings v2_Batch5; +launch_not_floating_warning/freeform_unsupported_warning v2_Batch6)
+strings.xml                      app/src/main/res/values/strings.xml (+step3/battery strings v2_Batch5; +launch_not_floating_warning/freeform_unsupported_warning v2_Batch6; +bringing_to_front/closed_success/closed_failed/favorites_long_press_hint v2_Batch7)
 colors.xml                       app/src/main/res/values/colors.xml
 themes.xml                       app/src/main/res/values/themes.xml
 bubble_background.xml            app/src/main/res/drawable/bubble_background.xml
@@ -65,9 +70,9 @@ backup_rules.xml                 app/src/main/res/xml/backup_rules.xml
 data_extraction_rules.xml        app/src/main/res/xml/data_extraction_rules.xml
 
 [DOCS — info terbaru selalu di paling atas tiap file]
-README.md                        README.md (Status Terkini di atas v2_Batch6)
+README.md                        README.md (Status Terkini di atas v2_Batch7)
 CHANGELOG.md                     CHANGELOG.md (newest-first, tetap)
-PROJECT_STATE.md                 PROJECT_STATE.md (STATUS TERKINI v2_Batch6 + Known-Fix Log dirapikan jadi 1 section)
+PROJECT_STATE.md                 PROJECT_STATE.md (STATUS TERKINI v2_Batch7 + Known-Fix Log + Arsip Detail v2_Batch6/v2_Batch5)
 FILE_MANIFEST.txt                FILE_MANIFEST.txt (file ini)
 
 [SENGAJA TIDAK ADA]
@@ -86,3 +91,12 @@ release.keystore                 -> di-generate sendiri oleh user
   lewat FloatingLaunchCoordinator.launch() — TIDAK BOLEH panggil
   ShizukuShellManager.launchFloating() langsung lagi, supaya session
   registry & verification selalu konsisten di kedua entry point (v2_Batch6).
+- FloatingLaunchCoordinator.launch() SEKARANG cek FloatingSessionManager
+  .sessionForApp() dulu sebelum relaunch — kalau app sudah
+  VERIFIED_FLOATING, di-route ke FloatingWindowController.bringToFront(),
+  BUKAN launch baru. Jangan panggil onLaunchStarted() manual di luar
+  coordinator, akan merusak pembedaan raise-vs-relaunch ini (v2_Batch7).
+- Window-level actions (bring-to-front, close) WAJIB lewat
+  core.window.FloatingWindowController — tidak boleh shell command manual
+  di tempat lain, supaya FloatingSessionManager selalu ikut ter-update
+  (v2_Batch7).

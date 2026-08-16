@@ -27,6 +27,7 @@ import com.floatingapps.app.core.power.BatteryOptimizationHelper
 import com.floatingapps.app.core.session.FloatingLaunchCoordinator
 import com.floatingapps.app.core.session.FloatingSessionManager
 import com.floatingapps.app.core.session.FloatingSessionState
+import com.floatingapps.app.core.window.FloatingWindowController
 import kotlinx.coroutines.launch
 import rikka.shizuku.Shizuku
 
@@ -285,7 +286,25 @@ class MainActivity : AppCompatActivity(), Shizuku.OnRequestPermissionResultListe
                 Toast.makeText(this, getString(R.string.launch_failed, app.label), Toast.LENGTH_SHORT).show()
             is FloatingLaunchCoordinator.LaunchOutcome.CommandSucceeded ->
                 Toast.makeText(this, getString(R.string.launch_success, app.label), Toast.LENGTH_SHORT).show()
+            is FloatingLaunchCoordinator.LaunchOutcome.BringingToFront ->
+                Toast.makeText(this, getString(R.string.bringing_to_front, app.label), Toast.LENGTH_SHORT).show()
         }
+    }
+
+    /** Long-press on an already-floating Favorite slot: close it via
+     *  core.window.FloatingWindowController (P0 #3 close slice). No-op
+     *  (silent) for a favorite that isn't currently a live session, since
+     *  FavoritesRowBinder can't know session state per-slot yet - see
+     *  PROJECT_STATE.md for why that visual distinction is deferred P1
+     *  polish rather than bundled into this batch. */
+    private fun closeFloatingFavorite(app: FloatableApp) {
+        if (FloatingSessionManager.sessionForApp(app) == null) return
+        val closed = FloatingWindowController.close(app)
+        Toast.makeText(
+            this,
+            if (closed) getString(R.string.closed_success, app.label) else getString(R.string.closed_failed, app.label),
+            Toast.LENGTH_SHORT
+        ).show()
     }
 
     private fun bindFavorites() {
@@ -295,7 +314,8 @@ class MainActivity : AppCompatActivity(), Shizuku.OnRequestPermissionResultListe
             onSlotTap = { app -> launchFloating(app) },
             onEmptySlotTap = {
                 Toast.makeText(this, getString(R.string.favorites_hint), Toast.LENGTH_SHORT).show()
-            }
+            },
+            onSlotLongClick = { app -> closeFloatingFavorite(app) }
         )
     }
 

@@ -3,7 +3,129 @@
 > bawah — sisipkan di atas "Known-Fix Log" section, entri lama tetap ada
 > di bawahnya untuk histori.
 
-## 🟢 STATUS TERKINI — v2.3.0 / Batch6 (2026-08-16)
+## 🟢 STATUS TERKINI — v2.4.0 / Batch7 (2026-08-16)
+**Confidence Rating: 94%**
+
+Batch ini adalah **Atomic Change** (15 file > limit 10 — lihat alasan di
+bawah) yang menjawab **P0 #4** (True Bring-to-Front, penuh), separuh **P0
+#3** (True Window Management: close + switch/raise; resize/reposition/
+maximize BELUM), dan **P0 #7** (Persistent Floating State, cakupan jujur —
+lihat batasan di bawah), melanjutkan persis "Urutan Kerja yang Benar" di
+`FloatingApps_v2_2_0_Final_Gap_Audit.md` (langkah 4: Window/Task State
+Layer). **BUKAN** rewrite total. Fondasi Batch6 (`FloatingSessionManager`,
+`CapabilityManager`, `LaunchVerification`, `FloatingLaunchCoordinator`)
+tidak dibongkar — batch ini menambah layer `core/window/` di atasnya.
+
+**Kenapa Atomic**: bring-to-front butuh session registry TAHU task ID
+existing (`FloatingSessionManager` +field baru) DAN kemampuan mengecek ulang
+task ID setelah re-launch (`core/window/` baru) DAN `FloatingLaunchCoordinator`
+harus tahu kapan memilih raise-vs-relaunch — tiga hal ini saling bergantung
+langsung, tidak bisa dipecah tanpa menyisakan state antara yang salah.
+Kedua entry point (`MainActivity` & `FloatingBubbleService`) juga harus
+di-update bersamaan lagi, sama seperti Batch6, demi alasan yang sama
+(mencegah drift).
+
+### Ringkasan perubahan
+1. **`core/window/` (baru)** — jawaban P0 #4 penuh + separuh P0 #3:
+   - `TaskIdParser.kt` — ekstraksi task ID best-effort dari teks dumpsys
+     yang sama dipakai `LaunchVerification` (3 pola regex fallback,
+     terdokumentasi sebagai heuristik, BUKAN kontrak stabil — prinsip
+     kejujuran yang sama dengan `LaunchVerification`/
+     `BatteryOptimizationHelper`).
+   - `FloatingWindowController.kt` — `bringToFront()`: re-issue command
+     freeform yang sama untuk session yang SUDAH `VERIFIED_FLOATING`, lalu
+     verifikasi ulang task ID sebelum-vs-sesudah (bukan asumsi buta seperti
+     sebelumnya). Task ID sama = `Confirmed`; beda = `PossibleDuplicate`
+     (kemungkinan window baru bukan window lama yang terangkat — dicatat di
+     session, TIDAK dianggap gagal karena window tetap ada); tidak ketemu
+     sama sekali = `NotFound`. `close()`: `am force-stop` — blunt (kill
+     seluruh proses app, bukan cuma satu window) tapi command AM yang
+     stabil lintas versi Android, TIDAK seperti command task-scoped
+     (`am task`/`am stack`) yang sintaksnya bergeser sejak refactor
+     multi-window Android 10 — inilah alasan resize/reposition/maximize
+     BELUM diimplementasikan di batch ini (lihat "Sengaja TIDAK
+     dikerjakan" di bawah).
+2. **`core/session/SessionPersistence.kt` (baru)** — jawaban P0 #7, cakupan
+   JUJUR: hanya menyimpan riwayat sesi (package/activity/label/state/
+   timestamp) ke SharedPreferences lintas-restart proses, FIFO cap 20 entri
+   (prinsip sama seperti retensi crash log). **TIDAK** menyimpan posisi/
+   ukuran jendela — app ini tidak memiliki rendering window tsb (OS/native
+   freeform chrome yang punya), jadi tidak ada posisi/ukuran lokal untuk
+   disimpan sampai layer resize/reposition (P0 #3 sisa) ada.
+3. **`FloatingSessionState.kt`** (parsial): tambah `RESTORED` — sesi yang
+   dimuat dari disk saat proses baru mulai, SENGAJA dibedakan dari
+   `VERIFIED_FLOATING` karena setelah restart proses tidak ada cara
+   memastikan window itu masih hidup tanpa cek shell baru. Ini juga
+   sekaligus melanjutkan P0 #6 (Failure & Recovery State) ke kasus restart.
+4. **`FloatingSession.kt`** (parsial): tambah `taskId: Int?` (metadata dari
+   `TaskIdParser`, tidak pernah ditebak) dan `duplicateSuspected: Boolean`.
+5. **`FloatingSessionManager.kt`** (parsial): `init(applicationContext)` —
+   dipanggil sekali dari `App.onCreate`, menyimpan context proses (bukan
+   Activity/Service — anti-leak) + restore riwayat sesi jadi `RESTORED`.
+   Tambah `sessionForApp()` (lookup live-verified session per app — dasar
+   bring-to-front), `onTaskIdResolved()`, `onBroughtToFront()`,
+   `onDuplicateWindowSuspected()`. Setiap transisi sekarang otomatis
+   `persist()` ke `SessionPersistence` kalau context sudah di-attach.
+6. **`LaunchVerification.kt`** (parsial): saat freeform terverifikasi,
+   parse & catat task ID lewat `TaskIdParser` (best-effort, tidak pernah
+   memblokir hasil verifikasi utama kalau gagal parse).
+7. **`FloatingLaunchCoordinator.kt`** (parsial): sebelum treat tap sebagai
+   launch baru, cek `FloatingSessionManager.sessionForApp()` dulu — kalau
+   app sudah `VERIFIED_FLOATING` sesi berjalan ini, di-route ke
+   `FloatingWindowController.bringToFront()`, bukan relaunch buta seperti
+   sebelumnya (perilaku lama Favorit yang jadi keluhan #4 di audit). Outcome
+   baru: `LaunchOutcome.BringingToFront`.
+8. **`ShizukuShellManager.kt`** (parsial): tambah `forceStop()` — wrapper
+   `am force-stop <pkg>` untuk `FloatingWindowController.close()`.
+9. **`App.kt`** (parsial, PROTECTED): panggil
+   `FloatingSessionManager.init(applicationContext)` di `onCreate` — satu
+   titik, jalan terlepas dari MainActivity atau FloatingBubbleService yang
+   jadi entry point pertama kali.
+10. **`FavoritesRowBinder.kt`** (parsial): tambah parameter
+    `onSlotLongClick` (default no-op, tidak breaking call site lama) — dasar
+    UI untuk "close" (P0 #3 slice) lewat tekan-tahan Favorit yang sedang
+    floating.
+11. **`MainActivity.kt`** (parsial, PROTECTED): `launchFloating()` handle
+    outcome `BringingToFront` baru; `closeFloatingFavorite()` baru (no-op
+    diam kalau slot itu bukan sesi live — lihat batasan UI di bawah), dikait
+    ke long-press Favorit.
+12. **`FloatingBubbleService.kt`** (parsial): perubahan cermin persis
+    MainActivity poin 11, demi konsistensi dua entry point (aturan tetap
+    dari Batch5/6).
+13. **`strings.xml`**: 4 string baru — `bringing_to_front`,
+    `closed_success`, `closed_failed`, `favorites_long_press_hint` (string
+    terakhir belum dipakai di layout manapun batch ini — disiapkan untuk
+    polish UI hint P1 berikutnya, BUKAN dead code yang menyesatkan, sengaja
+    dicatat di sini).
+14. **`app/build.gradle`** (PROTECTED, parsial): `versionCode 6` /
+    `versionName "2.4.0"`. Tidak ada dependency baru.
+
+### Batasan UI yang jujur (bukan bug)
+Favorit yang sedang floating TIDAK punya indikator visual berbeda dari yang
+tidak floating (mis. border/dot hijau) — `FavoritesRowBinder` belum tahu
+per-slot state sesi. Tekan-tahan untuk close tetap berfungsi (silent no-op
+kalau ternyata bukan sesi live), tapi user tidak tahu SECARA VISUAL slot
+mana yang aktif tanpa mencoba. Ini P1 #14 "Unified setup/readiness state"
+yang sudah disebut Batch6 sebagai utang — masih utang, sengaja tidak
+digabung ke sini supaya batch ini tetap fokus state/logic, bukan UI.
+Begitu juga `PossibleDuplicate` dari bring-to-front tidak punya toast/UI
+sendiri (hanya tercatat di `FloatingSession.duplicateSuspected` untuk
+debugging) — polish UX untuk kasus ini menyusul P1.
+
+### Sengaja TIDAK dikerjakan batch ini (lihat audit untuk detail)
+- P0 #3 sisa: resize, reposition, maximize internal — butuh command
+  task-scoped (`am task resize <id> <L,T,R,B>` secara historis ada, tapi
+  keandalannya lintas Android 10+ tidak terverifikasi di batch ini) DAN
+  control-chrome overlay per-window (subsistem UI besar tersendiri) — lebih
+  aman dikerjakan sebagai batch terpisah dengan testing nyata di device,
+  daripada mendorong command belum-teruji sekarang.
+- P0 #7 sisa: posisi/ukuran window — lihat penjelasan `SessionPersistence`
+  di atas, secara arsitektur baru masuk akal setelah resize/reposition ada.
+- Indikator visual "sedang floating" di Favorit/app list (P1 #14 lanjutan).
+- Semua P1/P2 lain (smart panel positioning, inset handling, animation
+  system, dst).
+
+### Arsip Detail — v2_Batch6 (2026-08-16)
 **Confidence Rating: 95%**
 
 Batch ini adalah **Atomic Change** (16 file > limit 10 — lihat alasan di
@@ -95,9 +217,13 @@ registry, satu tidak).
   "Unified setup/readiness state" batch berikutnya.
 
 ## Known-Fix Log (terbaru di atas)
+- **v2_Batch7** (2026-08-16): `core/window/` (TaskIdParser +
+  FloatingWindowController: bringToFront + close) + SessionPersistence +
+  FloatingSessionManager.init/sessionForApp + FloatingLaunchCoordinator
+  raise-vs-relaunch — lihat "STATUS TERKINI" di atas untuk detail penuh.
 - **v2_Batch6** (2026-08-16): FloatingSessionManager + CapabilityManager +
-  LaunchVerification + FloatingLaunchCoordinator — lihat "STATUS TERKINI"
-  di atas untuk detail penuh.
+  LaunchVerification + FloatingLaunchCoordinator — lihat "Arsip Detail —
+  v2_Batch6" di atas untuk detail penuh.
 - **v2_Batch5** (2026-08-16): scroll fix beranda, APK naming fix di
   GitHub Release, dokumentasi dirombak jadi latest-on-top, arsitektur
   modular anti-crash (`core/overlay`, `core/power`, `core/touch`,
@@ -270,8 +396,29 @@ pairing Wireless debugging sekali di awal.
   bisa "diperbaiki" tuntas dari sisi app tanpa root.
 - **App pre-v11 Shizuku** (sangat jarang) tidak difallback ke alur
   permission lama — disederhanakan sejak v2.0.0.
+- **Task ID (`TaskIdParser`, v2_Batch7) adalah heuristik, bukan API resmi**
+  — parsing teks `dumpsys`, sama seperti `LaunchVerification`. Bisa gagal
+  cocok di OEM/versi Android tertentu; kalau gagal, `bringToFront()`
+  melaporkan `NotFound`, TIDAK berpura-pura sukses.
+- **"Close" (v2_Batch7) memakai `am force-stop`, bukan close per-window** —
+  mematikan SELURUH proses app, termasuk state/data yang belum disimpan app
+  tsb. Ini trade-off sadar demi keandalan lintas versi Android (lihat
+  `FloatingWindowController.close()` doc), bukan kelalaian.
+- **Sesi `RESTORED` (v2_Batch7) adalah riwayat, bukan jaminan window masih
+  hidup** — setelah restart proses, app TIDAK bisa tahu status window
+  sebenarnya tanpa cek shell baru. Jangan treat `RESTORED` sebagai
+  `VERIFIED_FLOATING`.
 
-## Protected Assets Checklist (batch v2_Batch6)
+## Protected Assets Checklist (batch v2_Batch7)
+- [x] app/build.gradle — version bump saja, 0 dependency baru (parsial)
+- [x] App.kt — parsial (1 baris: `FloatingSessionManager.init()`)
+- [x] MainActivity.kt — parsial (launchFloating outcome baru +
+      closeFloatingFavorite baru; sisa struktur tidak diubah)
+- [x] AndroidManifest.xml — TIDAK diubah (force-stop/task-id lewat shell
+      Shizuku yang sudah privilese, tidak perlu permission baru)
+- [x] settings.gradle, .gitignore, .gitattributes, release.yml — tidak diubah
+
+### Protected Assets Checklist (batch v2_Batch6, histori)
 - [x] app/build.gradle — version bump saja, 0 dependency baru (parsial)
 - [x] MainActivity.kt — parsial (launchFloating + refreshUi/onResume +
       observeSessionState baru; sisa struktur tidak diubah)

@@ -24,5 +24,14 @@ enum class FloatingSessionState {
 
     /** Session ended (app closed, or superseded by a newer launch attempt
      *  for the same app). */
-    CLOSED
+    CLOSED,
+
+    /** Loaded from disk at process start (see SessionPersistence) - this is
+     *  history, NOT a live claim that the window is still floating right
+     *  now. A process restart means we have no way to know without a fresh
+     *  shell check, so this state exists specifically so the UI/registry
+     *  never confuses "was floating last time" with "is floating now". Only
+     *  a real launch/bring-to-front/verification call can move a session
+     *  out of this state. */
+    RESTORED
 }

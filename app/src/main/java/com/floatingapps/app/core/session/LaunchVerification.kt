@@ -3,6 +3,7 @@ package com.floatingapps.app.core.session
 import com.floatingapps.app.FloatableApp
 import com.floatingapps.app.ShizukuShellManager
 import com.floatingapps.app.core.capability.CapabilityManager
+import com.floatingapps.app.core.window.TaskIdParser
 import kotlinx.coroutines.delay
 
 /**
@@ -44,6 +45,13 @@ object LaunchVerification {
                 isFreeform -> {
                     FloatingSessionManager.onVerified(key)
                     CapabilityManager.recordEmpiricalResult(true)
+                    // Best-effort - see TaskIdParser doc. Powers
+                    // core.window.FloatingWindowController's bring-to-front
+                    // same-window confirmation (P0 #4). Never blocks the
+                    // verification outcome itself if this comes back null.
+                    TaskIdParser.findTaskId(dump, app.packageName)?.let {
+                        FloatingSessionManager.onTaskIdResolved(key, it)
+                    }
                     return
                 }
                 isFullscreen && isLastAttempt -> {

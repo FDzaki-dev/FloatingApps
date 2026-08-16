@@ -1,6 +1,48 @@
 # CHANGELOG
 > Terbaru selalu di paling atas.
 
+## [2.4.0] — v2_Batch7 — True Bring-to-Front, Window Close, Session Persistence
+Atomic Change (15 file) menjawab P0 #4 (penuh), separuh P0 #3 (close +
+switch, belum resize/reposition/maximize), dan P0 #7 (persistensi riwayat
+sesi, cakupan jujur — bukan posisi/ukuran window) dari
+`FloatingApps_v2_2_0_Final_Gap_Audit.md`. **Bukan** rewrite total — fondasi
+Batch6 (session registry, capability manager, launch verification) tidak
+dibongkar. Detail lengkap di `PROJECT_STATE.md`.
+
+### Added
+- `core/window/`: `TaskIdParser` (ekstraksi taskId best-effort dari
+  dumpsys, 3 pola regex fallback), `FloatingWindowController`
+  (`bringToFront()` — relaunch + verifikasi ulang taskId sebelum-vs-sesudah,
+  bukan asumsi buta; `close()` — via `am force-stop`).
+- `core/session/SessionPersistence` — riwayat sesi ke SharedPreferences,
+  FIFO cap 20, dipulihkan sebagai state `RESTORED` baru saat proses start
+  (BUKAN posisi/ukuran window — app tidak memiliki rendering window itu).
+- String baru: `bringing_to_front`, `closed_success`, `closed_failed`,
+  `favorites_long_press_hint`.
+- Long-press pada Favorit yang sedang floating sekarang menutup app
+  (`am force-stop`, lewat `FloatingWindowController`).
+
+### Fixed
+- Favorit yang tap ulang pada app yang sudah floating sebelumnya SELALU
+  relaunch buta (harap OS men-dedupe window). Sekarang dicek dulu lewat
+  `FloatingSessionManager.sessionForApp()` — kalau app sudah
+  `VERIFIED_FLOATING`, di-route ke `bringToFront()` yang memverifikasi
+  taskId sebelum/sesudah, bukan tebakan.
+- Registry sesi sebelumnya reset total tiap restart proses. Sekarang riwayat
+  sesi (bukan live state) bertahan lintas restart lewat `SessionPersistence`.
+
+### Changed
+- `versionCode 6` / `versionName "2.4.0"`. Tidak ada dependency baru.
+
+### Sengaja belum (lihat PROJECT_STATE.md untuk alasan penuh)
+- P0 #3 sisa: resize, reposition, maximize internal — butuh control-chrome
+  overlay per-window, subsistem UI tersendiri.
+- Indikator visual "sedang floating" di Favorit/app list.
+
+Detail desain, alasan tiap keputusan, dan daftar item yang SENGAJA belum
+dikerjakan: lihat `PROJECT_STATE.md` bagian "STATUS TERKINI — v2.4.0 /
+Batch7" (paling atas file itu).
+
 ## [2.3.0] — v2_Batch6 — Session Registry, Capability Detection, Launch Verification
 Atomic Change (16 file) menjawab P0 #1, #2, #5, #6, #8 dari
 `FloatingApps_v2_2_0_Final_Gap_Audit.md`, mengikuti urutan kerja yang

@@ -94,6 +94,14 @@ object ShizukuShellManager {
     fun dumpActivityState(packageName: String): String =
         exec(arrayOf("dumpsys", "activity", "activities", packageName))
 
+    /** Kills [packageName] outright - used by core.window.FloatingWindowController
+     *  as the "close" half of window management. `am force-stop` is blunt
+     *  (whole process, not just one window) but is a stable AM command
+     *  across Android versions, unlike task-scoped remove commands whose
+     *  shell syntax shifted across the Android 10 multi-window refactor. */
+    fun forceStop(packageName: String): String =
+        exec(arrayOf("am", "force-stop", packageName))
+
     private fun exec(cmd: Array<String>): String {
         return try {
             service?.execArr(cmd) ?: "Shizuku belum siap"
