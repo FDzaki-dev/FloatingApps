@@ -20,6 +20,7 @@ import android.view.WindowManager
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.PopupMenu
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -30,6 +31,7 @@ import com.floatingapps.app.core.session.FloatingLaunchCoordinator
 import com.floatingapps.app.core.session.FloatingSessionManager
 import com.floatingapps.app.core.touch.FloatingDragTouchListener
 import com.floatingapps.app.core.window.FloatingWindowController
+import com.floatingapps.app.core.window.WindowGeometry
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -77,6 +79,10 @@ class FloatingBubbleService : Service() {
     private lateinit var bubbleParams: WindowManager.LayoutParams
     private var pickerAdapter: AppListAdapter? = null
     private var allAppsCache: List<FloatableApp> = emptyList()
+    /** Set while the panel is open, cleared in removePanel() - lets window
+     *  actions (resize/close) triggered from the panel's PopupMenu refresh
+     *  the same favorites row's live indicator without a full re-open. */
+    private var currentFavoritesContainer: LinearLayout? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -227,6 +233,7 @@ class FloatingBubbleService : Service() {
         )
         pickerAdapter = adapter
         rv.adapter = adapter
+        currentFavoritesContainer = favoritesContainer
         AppListLoader.load(this) { apps ->
             allAppsCache = apps
             adapter.submitList(apps)
@@ -263,13 +270,54 @@ class FloatingBubbleService : Service() {
             onEmptySlotTap = {
                 Toast.makeText(this, getString(R.string.favorites_hint), Toast.LENGTH_SHORT).show()
             },
-            onSlotLongClick = { app -> closeFloatingFavorite(app) }
+            onSlotLongClick = { anchor, app -> showFloatingSessionMenu(anchor, app) },
+            isLive = { app -> FloatingSessionManager.sessionForApp(app) != null }
         )
     }
 
-    /** Mirrors MainActivity.closeFloatingFavorite - see its doc. Both entry
-     *  points must stay in lockstep on session/window actions, same rule
-     *  established for launchFloating() via FloatingLaunchCoordinator. */
+    /** Mirrors MainActivity.showFloatingSessionMenu - see its doc. Both
+     *  entry points must stay in lockstep on session/window actions, same
+     *  rule established for launchFloating() via FloatingLaunchCoordinator.
+     *  PopupMenu is constructed with a [ContextThemeWrapper], NOT the bare
+     *  Service context - same anti-crash rule the v2_Batch4 hotfix
+     *  established for LayoutInflater in this Service (unthemed Service
+     *  context + `?attr/...`-resolving framework views is exactly the
+     *  UnsupportedOperationException class of crash that fix closed). */
+    private fun showFloatingSessionMenu(anchor: View, app: FloatableApp) {
+        if (FloatingSessionManager.sessionForApp(app) == null) return
+        val themedContext = ContextThemeWrapper(this, R.style.Theme_FloatingApps)
+        val popup = PopupMenu(themedContext, anchor)
+        popup.menu.add(0, 1, 0, getString(R.string.action_maximize))
+        popup.menu.add(0, 2, 1, getString(R.string.action_snap_left))
+        popup.menu.add(0, 3, 2, getString(R.string.action_snap_right))
+        popup.menu.add(0, 4, 3, getString(R.string.action_restore_size))
+        popup.menu.add(0, 5, 4, getString(R.string.action_close_window))
+        popup.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                1 -> { applyWindowPreset(app, WindowGeometry.Preset.MAXIMIZE); true }
+                2 -> { applyWindowPreset(app, WindowGeometry.Preset.SNAP_LEFT); true }
+                3 -> { applyWindowPreset(app, WindowGeometry.Preset.SNAP_RIGHT); true }
+                4 -> { applyWindowPreset(app, WindowGeometry.Preset.RESTORE); true }
+                5 -> { closeFloatingFavorite(app); true }
+                else -> false
+            }
+        }
+        popup.show()
+    }
+
+    private fun applyWindowPreset(app: FloatableApp, preset: WindowGeometry.Preset) {
+        val bounds = WindowGeometry.forPreset(this, preset)
+        when (FloatingWindowController.resize(app, bounds)) {
+            is FloatingWindowController.ResizeResult.Success ->
+                Toast.makeText(this, getString(R.string.resize_success, app.label), Toast.LENGTH_SHORT).show()
+            is FloatingWindowController.ResizeResult.Failed ->
+                Toast.makeText(this, getString(R.string.resize_failed, app.label), Toast.LENGTH_SHORT).show()
+            is FloatingWindowController.ResizeResult.NoTaskId ->
+                Toast.makeText(this, getString(R.string.resize_no_taskid), Toast.LENGTH_SHORT).show()
+        }
+        currentFavoritesContainer?.let { bindFavorites(it) }
+    }
+
     private fun closeFloatingFavorite(app: FloatableApp) {
         if (FloatingSessionManager.sessionForApp(app) == null) return
         val closed = FloatingWindowController.close(app)
@@ -278,6 +326,7 @@ class FloatingBubbleService : Service() {
             if (closed) getString(R.string.closed_success, app.label) else getString(R.string.closed_failed, app.label),
             Toast.LENGTH_SHORT
         ).show()
+        currentFavoritesContainer?.let { bindFavorites(it) }
     }
 
     private fun togglePin(app: FloatableApp, favoritesContainer: LinearLayout) {
@@ -308,5 +357,6 @@ class FloatingBubbleService : Service() {
         overlayController.remove(panelView)
         panelView = null
         pickerAdapter = null
+        currentFavoritesContainer = null
     }
 }

@@ -7,9 +7,11 @@ import android.os.Build
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
+import android.widget.PopupMenu
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -28,6 +30,7 @@ import com.floatingapps.app.core.session.FloatingLaunchCoordinator
 import com.floatingapps.app.core.session.FloatingSessionManager
 import com.floatingapps.app.core.session.FloatingSessionState
 import com.floatingapps.app.core.window.FloatingWindowController
+import com.floatingapps.app.core.window.WindowGeometry
 import kotlinx.coroutines.launch
 import rikka.shizuku.Shizuku
 
@@ -179,6 +182,11 @@ class MainActivity : AppCompatActivity(), Shizuku.OnRequestPermissionResultListe
                                 ).show()
                             }
                         }
+                    // v2_Batch9: any session transition (verified/closed/
+                    // duplicate, etc.) can flip a Favorite's "live" ring
+                    // indicator - re-bind so it never goes stale waiting on
+                    // the next onResume()/manual action.
+                    bindFavorites()
                 }
             }
         }
@@ -322,12 +330,50 @@ class MainActivity : AppCompatActivity(), Shizuku.OnRequestPermissionResultListe
         }
     }
 
-    /** Long-press on an already-floating Favorite slot: close it via
-     *  core.window.FloatingWindowController (P0 #3 close slice). No-op
-     *  (silent) for a favorite that isn't currently a live session, since
-     *  FavoritesRowBinder can't know session state per-slot yet - see
-     *  PROJECT_STATE.md for why that visual distinction is deferred P1
-     *  polish rather than bundled into this batch. */
+    /** Long-press on an already-floating Favorite slot: open the
+     *  window-position menu (Maximize/Snap Left/Snap Right/Restore/Close) -
+     *  the P0 #3 "resize/reposition/maximize" slice this batch adds on top
+     *  of the close-only long-press from v2_Batch7. Silent no-op for a
+     *  favorite that isn't currently a live session (FavoritesRowBinder's
+     *  isLive ring already tells the user which slots qualify). */
+    private fun showFloatingSessionMenu(anchor: View, app: FloatableApp) {
+        if (FloatingSessionManager.sessionForApp(app) == null) return
+        val popup = PopupMenu(this, anchor)
+        popup.menu.add(0, 1, 0, getString(R.string.action_maximize))
+        popup.menu.add(0, 2, 1, getString(R.string.action_snap_left))
+        popup.menu.add(0, 3, 2, getString(R.string.action_snap_right))
+        popup.menu.add(0, 4, 3, getString(R.string.action_restore_size))
+        popup.menu.add(0, 5, 4, getString(R.string.action_close_window))
+        popup.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                1 -> { applyWindowPreset(app, WindowGeometry.Preset.MAXIMIZE); true }
+                2 -> { applyWindowPreset(app, WindowGeometry.Preset.SNAP_LEFT); true }
+                3 -> { applyWindowPreset(app, WindowGeometry.Preset.SNAP_RIGHT); true }
+                4 -> { applyWindowPreset(app, WindowGeometry.Preset.RESTORE); true }
+                5 -> { closeFloatingFavorite(app); true }
+                else -> false
+            }
+        }
+        popup.show()
+    }
+
+    /** Sends one preset rectangle (see WindowGeometry) to
+     *  core.window.FloatingWindowController.resize() - best-effort, same
+     *  honesty rule as every shell command in this app: report NoTaskId
+     *  distinctly from a genuine Failed rather than pretending either one
+     *  is a normal "OK". */
+    private fun applyWindowPreset(app: FloatableApp, preset: WindowGeometry.Preset) {
+        val bounds = WindowGeometry.forPreset(this, preset)
+        when (FloatingWindowController.resize(app, bounds)) {
+            is FloatingWindowController.ResizeResult.Success ->
+                Toast.makeText(this, getString(R.string.resize_success, app.label), Toast.LENGTH_SHORT).show()
+            is FloatingWindowController.ResizeResult.Failed ->
+                Toast.makeText(this, getString(R.string.resize_failed, app.label), Toast.LENGTH_SHORT).show()
+            is FloatingWindowController.ResizeResult.NoTaskId ->
+                Toast.makeText(this, getString(R.string.resize_no_taskid), Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private fun closeFloatingFavorite(app: FloatableApp) {
         if (FloatingSessionManager.sessionForApp(app) == null) return
         val closed = FloatingWindowController.close(app)
@@ -336,6 +382,7 @@ class MainActivity : AppCompatActivity(), Shizuku.OnRequestPermissionResultListe
             if (closed) getString(R.string.closed_success, app.label) else getString(R.string.closed_failed, app.label),
             Toast.LENGTH_SHORT
         ).show()
+        bindFavorites()
     }
 
     private fun bindFavorites() {
@@ -346,7 +393,8 @@ class MainActivity : AppCompatActivity(), Shizuku.OnRequestPermissionResultListe
             onEmptySlotTap = {
                 Toast.makeText(this, getString(R.string.favorites_hint), Toast.LENGTH_SHORT).show()
             },
-            onSlotLongClick = { app -> closeFloatingFavorite(app) }
+            onSlotLongClick = { anchor, app -> showFloatingSessionMenu(anchor, app) },
+            isLive = { app -> FloatingSessionManager.sessionForApp(app) != null }
         )
     }
 

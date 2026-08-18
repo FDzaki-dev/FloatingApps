@@ -49,7 +49,15 @@
     <string name="bringing_to_front">Membawa %1$s ke depan…</string>
     <string name="closed_success">%1$s ditutup</string>
     <string name="closed_failed">Gagal menutup %1$s</string>
-    <string name="favorites_long_press_hint">Favorit yang sedang floating: tekan singkat untuk ke depan, tekan &amp; tahan untuk tutup</string>
+    <string name="favorites_long_press_hint">Favorit yang sedang floating (ring hijau): tekan singkat untuk ke depan, tekan &amp; tahan untuk menu posisi (maksimalkan/tempel/kembalikan/tutup)</string>
+    <string name="action_maximize">Maksimalkan</string>
+    <string name="action_snap_left">Tempel ke Kiri</string>
+    <string name="action_snap_right">Tempel ke Kanan</string>
+    <string name="action_restore_size">Kembalikan ke Ukuran Default</string>
+    <string name="action_close_window">Tutup Jendela Ini</string>
+    <string name="resize_success">%1$s: posisi/ukuran jendela diubah</string>
+    <string name="resize_failed">%1$s: gagal mengubah posisi/ukuran jendela — device/ROM ini mungkin tidak mendukung perintah resize</string>
+    <string name="resize_no_taskid">Task ID jendela ini belum diketahui — tap app-nya sekali lagi dulu, baru coba ubah posisi</string>
     <string name="readiness_ready">✅ Siap — semua izin lengkap, floating akan bekerja normal</string>
     <string name="readiness_degraded">⚠️ Berjalan, tapi baterai belum full-exempt — OS bisa mematikan bubble sewaktu-waktu di background. Lihat Langkah 3.</string>
     <string name="readiness_action_required">🔧 Izin belum lengkap — selesaikan langkah di bawah sebelum mencoba floating</string>

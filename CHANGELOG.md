@@ -1,6 +1,42 @@
 # CHANGELOG
 > Terbaru selalu di paling atas.
 
+## [2.6.0] — v2_Batch9 — Window Position Control (Maximize/Snap/Restore) + Live Indicator
+Batch reguler (9 file, bukan Atomic) — jawab sisa P0 #3 "True Window
+Management" (preset-position slice) + lanjutan P1 #14 (indikator visual
+"sedang floating" di Favorit). Langsung menjawab keluhan "jangan cuma jadi
+trigger floating" — sekarang ada kontrol posisi nyata dari dalam app, bukan
+cuma launch + title bar OS. Detail lengkap di `PROJECT_STATE.md`.
+
+### Added
+- `core/window/WindowGeometry.kt` — hitung `Rect` preset (Maximize/Snap
+  Left/Snap Right/Restore) dari ukuran layar saat ini.
+- `ShizukuShellManager.resizeTask()` — wrapper `am task resize`.
+- `FloatingWindowController.resize()` + `ResizeResult` sealed
+  (Success/Failed/NoTaskId).
+- Menu posisi (PopupMenu native) di long-press Favorit yang sedang
+  floating: Maksimalkan / Tempel Kiri / Tempel Kanan / Kembalikan Ukuran /
+  Tutup Jendela — menggantikan long-press lama yang cuma bisa tutup.
+- Ring indikator visual (`favorite_slot_background_live.xml`) untuk slot
+  Favorit yang sedang live floating — sebelumnya tidak ada beda visual
+  sama sekali dari slot yang tidak floating.
+
+### Changed
+- `FavoritesRowBinder.bind()`: `onSlotLongClick` sekarang `(View,
+  FloatableApp) -> Unit` (perlu anchor untuk PopupMenu) + parameter baru
+  `isLive`. Kedua call site (`MainActivity`, `FloatingBubbleService`)
+  di-update bersamaan.
+- `MainActivity.observeSessionState()` diperluas: setiap perubahan sesi
+  sekarang juga refresh indikator live Favorit secara reaktif.
+- `versionCode 9` / `versionName "2.6.0"`. Tidak ada dependency baru.
+
+### Known limitation (jujur, bukan bug)
+`am task resize` adalah command paling belum-terverifikasi di codebase ini
+sejauh ini — ada di help text AOSP sejak Android 6, tapi belum ada laporan
+lapangan yang mengonfirmasi masih jalan di Android 10+. Kegagalan
+dilaporkan apa adanya lewat toast (`resize_failed`), tidak disamarkan jadi
+sukses semu.
+
 ## [2.5.0] — v2_Batch8 — Unified Readiness Banner (Failure/Recovery UX)
 Batch reguler (5 file, bukan Atomic) — jawab "Urutan Kerja" langkah 5 audit
 + P1 #14. Menampilkan state `CapabilityManager` (dibangun Batch6) yang

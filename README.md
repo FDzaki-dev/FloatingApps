@@ -1,17 +1,25 @@
 # Floating Apps
 
-## 🟢 Status Terkini — v2.5.0 (2026-08-17)
-- **Terbaru:** satu banner status terpadu di beranda — langsung kelihatan
-  kalau semua siap, baterai belum full-exempt, izin belum lengkap, device
-  kemungkinan tidak mendukung floating, atau ada error — tanpa harus coba
-  launch dulu buat tahu.
-- **Terbaru:** hotfix crash v2.4.1 (regex `TaskIdParser`) — lihat
-  `PROJECT_STATE.md` untuk detail root cause.
+## 🟢 Status Terkini — v2.6.0 (2026-08-18)
+- **Terbaru:** kontrol posisi window nyata — tekan & tahan Favorit yang
+  sedang floating (ring hijau) untuk buka menu **Maksimalkan / Tempel
+  Kiri / Tempel Kanan / Kembalikan Ukuran / Tutup**. Ini yang bikin app ini
+  bukan cuma "trigger" launch, tapi manager floating window sungguhan.
+- **Terbaru:** indikator visual — slot Favorit yang sedang live floating
+  sekarang punya ring hijau berbeda, tidak lagi identik dengan slot yang
+  tidak floating.
+- **Catatan jujur:** perintah resize (`am task resize`) belum pernah
+  diverifikasi lewat laporan lapangan nyata di device manapun — kalau
+  gagal di device/ROM tertentu, app melapor jujur lewat toast, bukan
+  berpura-pura sukses. Lihat `PROJECT_STATE.md` bagian "Keterbatasan
+  Jujur" kalau resize tidak bekerja di HP kamu.
 - Detail lengkap & alasan desain: lihat `PROJECT_STATE.md` (paling atas =
-  paling baru). Item besar berikutnya (resize/reposition/maximize window
-  internal) menyusul di batch berikutnya — lihat
-  `FloatingApps_v2_2_0_Final_Gap_Audit.md`.
+  paling baru).
 - Rilis APK terbaru: lihat tab **Releases** di sidebar repo ini.
+
+## Status Sebelumnya — v2.5.0
+- Satu banner status terpadu di beranda (readiness: siap/degraded/perlu
+  aksi/tidak didukung/error) — tidak perlu coba launch dulu buat tahu.
 
 ## Status Sebelumnya — v2.4.0
 - Favorit yang sudah floating punya bring-to-front yang benar (diverifikasi,
@@ -50,8 +58,16 @@
 5. Opsional: tap "Mulai Bubble Akses Cepat" untuk bubble draggable
    (boundary-constrained, snap ke tepi layar) yang bisa dipakai
    floating-in-app tanpa balik ke Floating Apps.
+6. Pin app ke slot Favorit (tekan & tahan di daftar app) untuk akses
+   sekali-tap. Favorit yang sedang floating dapat **ring hijau**; tekan &
+   tahan slot itu untuk buka menu **Maksimalkan / Tempel Kiri / Tempel
+   Kanan / Kembalikan Ukuran / Tutup**.
 
 ## Catatan Jujur
+- Perintah resize/posisi window (`am task resize`) belum pernah dikonfirmasi
+  lewat laporan lapangan nyata di device manapun — kalau gagal di device/
+  ROM tertentu, itu keterbatasan platform, app melapor jujur lewat toast
+  ("gagal mengubah posisi..."), bukan pura-pura sukses.
 - Shizuku butuh pairing ulang tiap restart HP (kecuali root) — keterbatasan
   Shizuku sendiri.
 - Freeform window bergantung dukungan OS/OEM device kamu. Sebagian besar

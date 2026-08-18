@@ -3,7 +3,121 @@
 > bawah — sisipkan di atas "Known-Fix Log" section, entri lama tetap ada
 > di bawahnya untuk histori.
 
-## 🟢 STATUS TERKINI — v2.5.0 / Batch8 (2026-08-17)
+## 🟢 STATUS TERKINI — v2.6.0 / Batch9 (2026-08-18)
+**Confidence Rating: 90%**
+
+Batch reguler (9 file, di bawah limit 10 — BUKAN Atomic Change) yang
+menjawab **sisa P0 #3 "True Window Management"**: Maximize, Snap Left, Snap
+Right, Restore, lewat menu posisi baru di Favorit — plus lanjutan P1 #14
+"visual indicator sedang floating" yang jadi utang sejak Batch7. Ini
+langsung menjawab keluhan user "jangan cuma jadi trigger floating yang gak
+bisa ngapa-ngapain" — sebelum batch ini, satu-satunya kontrol window
+setelah launch adalah title bar bawaan OS + tutup lewat tekan-tahan; sekarang
+ada kontrol posisi nyata dari dalam app.
+
+### Kenapa preset, BUKAN drag-resize custom
+Audit lama (`FloatingApps_v2_2_0_Final_Gap_Audit.md`, dikutip di arsip
+Batch7 di bawah) sengaja menahan P0 #3 sisa karena butuh **dua** hal:
+command task-scoped yang belum teruji DAN control-chrome UI drag-resize
+(subsistem besar sendiri). Batch ini menutup celah command (lihat di bawah)
+TAPI sengaja tetap TIDAK membangun chrome drag-resize — itu perlu testing
+sentuhan nyata di device yang tidak bisa dilakukan dari sesi kerja ini.
+Sebagai gantinya: 4 preset posisi (Maximize/Snap Left/Snap Right/Restore)
+lewat `PopupMenu` native Android (bukan overlay custom, bukan touch-drag
+custom) — zero risiko regresi gesture drag bubble yang sudah ada, dan tetap
+memberi kontrol posisi yang nyata & berguna sehari-hari.
+
+### Ringkasan perubahan
+1. **`core/window/WindowGeometry.kt`** (baru) — hitung `Rect` untuk 4
+   preset dari `ScreenMetricsProvider.current()` (sumber yang sama dipakai
+   boundary-clamp bubble) — SELALU dihitung ulang saat dipanggil, jadi tetap
+   benar walau layar sudah rotasi sejak sesi pertama dibuka. `RESTORE`
+   BUKAN ukuran asli yang diingat (app tidak tahu ukuran asli window OS,
+   sama seperti taskId yang tidak pernah ditebak) — cuma ukuran default
+   85%x75% layar, center.
+2. **`ShizukuShellManager.kt`** (parsial) — `resizeTask()` baru, wrapper
+   `am task resize <id> <L,T,R,B>`. Command ini terkonfirmasi ada di help
+   text `ActivityManagerShellCommand` AOSP (terdokumentasi sejak Android 6),
+   TAPI — sama seperti alasan `close()` v2_Batch7 menghindari command
+   task-scoped untuk force-stop — TIDAK diverifikasi ulang lintas refactor
+   ActivityStack→WindowContainer Android 10+. Best-effort, dibungkus sama
+   seperti semua command lain di sini: caller cek string error di output,
+   tidak pernah asumsi sukses.
+3. **`core/window/FloatingWindowController.kt`** (parsial) — `resize()`
+   baru + `ResizeResult` sealed (`Success`/`Failed`/`NoTaskId`). `NoTaskId`
+   dibedakan dari `Failed` secara sengaja — kalau taskId sesi belum resolve
+   (lihat `FloatingSession.taskId`), resize TIDAK dicoba sama sekali,
+   bukan dicoba-lalu-gagal-diam. Class doc diperbarui (sebelumnya bilang
+   resize "intentionally NOT here yet" — sekarang sudah, dengan catatan
+   drag-resize custom tetap ditunda).
+4. **`FavoritesRowBinder.kt`** (parsial) — signature `onSlotLongClick`
+   berubah dari `(FloatableApp) -> Unit` jadi `(View, FloatableApp) -> Unit`
+   (perlu anchor View untuk `PopupMenu`) — BREAKING tapi kedua call site
+   (`MainActivity`, `FloatingBubbleService`) di-update bersamaan di batch
+   ini, jadi tidak ada drift. Parameter baru `isLive: (FloatableApp) ->
+   Boolean` — slot favorit yang live sekarang dapat ring warna
+   `readiness_ready` (`favorite_slot_background_live.xml`, baru) alih-alih
+   identik dengan yang tidak floating — inilah P1 #14 "Batasan UI yang
+   jujur" dari Batch7 yang akhirnya ditutup.
+5. **`MainActivity.kt`** (parsial, PROTECTED) — `showFloatingSessionMenu()`
+   baru (PopupMenu 5 aksi: Maximize/Snap Left/Snap Right/Restore/Tutup),
+   `applyWindowPreset()` baru. `observeSessionState()` diperluas: setiap
+   emission `FloatingSessionManager.sessions` sekarang juga memanggil
+   `bindFavorites()` — indikator ring live jadi reaktif penuh (bukan cuma
+   saat `onResume()`/aksi manual), pola sama seperti banner readiness
+   Batch8.
+6. **`FloatingBubbleService.kt`** (parsial) — cermin persis MainActivity
+   poin 5 (parity dua entry point, aturan tetap sejak Batch5/6). Satu beda
+   sengaja: `PopupMenu` dibuat dengan `ContextThemeWrapper(this,
+   R.style.Theme_FloatingApps)`, BUKAN Service context mentah — aturan
+   anti-crash yang sama persis dengan hotfix v2_Batch4 (Service context
+   tanpa tema + view yang resolve `?attr/...` = crash kelas
+   `UnsupportedOperationException`). Field baru `currentFavoritesContainer`
+   (di-set di `addPanel()`, di-null-kan di `removePanel()`) supaya aksi
+   resize/close dari popup bisa refresh ring indicator TANPA menutup-buka
+   ulang panel.
+7. **`strings.xml`**: 8 string baru (5 label menu + `resize_success`/
+   `resize_failed`/`resize_no_taskid`), 1 diubah (`favorites_long_press_hint`
+   — sebelumnya cuma bilang "tutup", sekarang menyebut menu posisi + ring
+   hijau).
+8. **`res/drawable/favorite_slot_background_live.xml`** (baru) — bentuk
+   sama dengan `favorite_slot_background`, ring lebih tebal warna
+   `readiness_ready`.
+9. **`app/build.gradle`** (PROTECTED, parsial): `versionCode 9` /
+   `versionName "2.6.0"`. Tidak ada dependency baru (PopupMenu = framework
+   Android bawaan).
+
+### Kenapa Confidence turun ke 90% (dari 93%)
+BUKAN regresi — turun murni karena `am task resize` adalah command paling
+tidak-terverifikasi di seluruh codebase ini sejauh ini (bahkan dibanding
+`TaskIdParser`/`bringToFront` yang setidaknya sudah pernah diverifikasi
+via crash log user asli, `dd2b3cf4`). Belum ada sinyal lapangan sama sekali
+soal command ini di device manapun. `NoTaskId`/`Failed` result yang jelas +
+toast yang jujur ("gagal mengubah posisi... ROM ini mungkin tidak
+mendukung") dipilih justru supaya kegagalan command ini tidak pernah
+terlihat seperti bug app kalau ternyata OEM/versi Android tertentu memang
+tidak mendukungnya — tapi ini tetap area yang PALING butuh laporan
+lapangan/crash log nyata sebelum confidence bisa naik lagi.
+
+### Sengaja TIDAK dikerjakan batch ini
+- Drag-to-resize custom chrome (P0 #3 "penuh") — lihat "Kenapa preset,
+  BUKAN drag-resize custom" di atas.
+- Verifikasi ulang bounds setelah resize (dumpsys check before/after,
+  seperti `bringToFront` punya untuk taskId) — `ResizeResult.Success`
+  hanya berarti "command tidak melapor error", bukan "bounds dikonfirmasi
+  berubah". Fair follow-up P1 kalau ada laporan silent-failure di lapangan.
+- Soft per-window close (kill 1 window, bukan seluruh proses) — masih
+  `am force-stop`, lihat `FloatingWindowController.close()` doc.
+- P1/P2 lain yang belum disentuh (lihat daftar archive Batch8 di bawah,
+  tidak berubah).
+
+(Protected Assets Checklist batch ini ada di section konsolidasi
+"Protected Assets Checklist" dekat akhir file, seperti batch-batch
+sebelumnya.)
+
+---
+
+### Arsip Detail — v2_Batch8 (2026-08-17)
 **Confidence Rating: 93%**
 
 Batch reguler (5 file, di bawah limit 10 — BUKAN Atomic Change) yang
@@ -310,6 +424,11 @@ registry, satu tidak).
   "Unified setup/readiness state" batch berikutnya.
 
 ## Known-Fix Log (terbaru di atas)
+- **v2_Batch9** (2026-08-18): Window position control — Maximize/Snap
+  Left/Snap Right/Restore lewat menu (PopupMenu) di long-press Favorit
+  live, plus indikator ring visual "sedang floating" (P1 #14 lanjutan) —
+  lihat "STATUS TERKINI" di atas untuk detail penuh & alasan pilih preset
+  ketimbang drag-resize custom.
 - **v2_Batch8** (2026-08-17): Unified readiness banner (`MainActivity` +
   `CapabilityManager` hardening + live-reactive snapshot) — jawab audit
   langkah 5 "Failure/Recovery UX" + P1 #14 — lihat "STATUS TERKINI" di atas.
@@ -508,8 +627,25 @@ pairing Wireless debugging sekali di awal.
   hidup** — setelah restart proses, app TIDAK bisa tahu status window
   sebenarnya tanpa cek shell baru. Jangan treat `RESTORED` sebagai
   `VERIFIED_FLOATING`.
+- **Resize/posisi window (`am task resize`, v2_Batch9) adalah command
+  paling tidak-terverifikasi di codebase ini** — ada di help text AOSP
+  sejak Android 6, TAPI belum ada satupun laporan lapangan (crash log atau
+  konfirmasi manual) yang membuktikan command ini masih bekerja di
+  Android 10+ modern. `ResizeResult.Failed` dilaporkan apa adanya lewat
+  toast, TIDAK disamarkan jadi sukses semu — kalau device/ROM tertentu
+  tidak mendukungnya, itu keterbatasan platform, bukan bug app yang perlu
+  "diperbaiki" diam-diam.
 
-## Protected Assets Checklist (batch v2_Batch8)
+## Protected Assets Checklist (batch v2_Batch9)
+- [x] app/build.gradle — version bump saja (9/2.6.0), 0 dependency baru (parsial)
+- [x] MainActivity.kt — parsial (showFloatingSessionMenu + applyWindowPreset
+      baru; observeSessionState diperluas untuk refresh indikator live;
+      sisa struktur tidak diubah)
+- [x] AndroidManifest.xml — TIDAK diubah (resize lewat shell Shizuku yang
+      sudah privilese, tidak perlu permission baru)
+- [x] App.kt, settings.gradle, .gitignore, .gitattributes, release.yml — tidak diubah
+
+### Protected Assets Checklist (batch v2_Batch8, histori)
 - [x] app/build.gradle — version bump saja (8/2.5.0), 0 dependency baru (parsial)
 - [x] MainActivity.kt — parsial (observeCapabilityState baru + binding
       tvReadinessBanner; sisa struktur tidak diubah)

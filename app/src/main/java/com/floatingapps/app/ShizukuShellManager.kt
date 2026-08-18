@@ -102,6 +102,20 @@ object ShizukuShellManager {
     fun forceStop(packageName: String): String =
         exec(arrayOf("am", "force-stop", packageName))
 
+    /** Resizes an EXISTING task's window bounds - the "snap position" half
+     *  of P0 #3 Window Management (core.window.WindowGeometry supplies the
+     *  preset bounds, core.window.FloatingWindowController calls this).
+     *  Uses the legacy `am task resize <id> <L,T,R,B>` bounds command,
+     *  confirmed present in AOSP's ActivityManagerShellCommand help text
+     *  (documented since Android 6) but - like every task-scoped command in
+     *  this app - NOT re-verified against the Android 10+ ActivityStack→
+     *  WindowContainer refactor that already forced forceStop()/close() to
+     *  avoid task-scoped commands entirely. Best-effort by design: caller
+     *  checks the returned string for an error signal, never assumes
+     *  success just because this returned. */
+    fun resizeTask(taskId: Int, left: Int, top: Int, right: Int, bottom: Int): String =
+        exec(arrayOf("am", "task", "resize", taskId.toString(), "$left,$top,$right,$bottom"))
+
     private fun exec(cmd: Array<String>): String {
         return try {
             service?.execArr(cmd) ?: "Shizuku belum siap"

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Same shape as favorite_slot_background, but with the "ready" readiness
+     color as a thicker ring - the visual "this is currently floating"
+     indicator that was P1 #14 leftover debt (see FavoritesRowBinder /
+     PROJECT_STATE.md "Batasan UI yang jujur" in the v2_Batch7 archive). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="@color/surface" />
+    <stroke
+        android:width="2.5dp"
+        android:color="@color/readiness_ready" />
+</shape>
